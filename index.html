@@ -885,7 +885,9 @@ async function delSub(fid,sid){
 }
 async function delFx(id){
   M.fixedCosts=M.fixedCosts.filter(f=>f.id!==id);S.fixedCosts=S.fixedCosts.filter(f=>f.id!==id);
-  await Promise.all([save(),saveSett()]);render();
+  render();
+  try{await Promise.all([save(),saveSett()]);}
+  catch(e){console.error('delFx:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function addFx(){
   const n=document.getElementById('fn').value.trim(),a=parseFloat(document.getElementById('fa').value)||0;
@@ -916,6 +918,16 @@ function buildVariable(){
     const[cx]=S.categories.splice(from,1);S.categories.splice(to,0,cx);
     render();saveSett();
   });
+  // Orphaned entries (Kategorie gelöscht, Betrag noch vorhanden)
+  const knownCatIds=new Set((S.categories||[]).map(c=>c.id));
+  const orphaned=(M.variableEntries||[]).filter(en=>!knownCatIds.has(en.categoryId));
+  if(orphaned.length>0){
+    const orphanTotal=orphaned.reduce((s,en)=>s+(en.amount||0),0);
+    const ro=mk('div','row');ro.style.cssText='background:rgba(220,80,80,.07);border-radius:10px;margin-top:4px;cursor:default';
+    ro.innerHTML=`<span class="ico">🗑️</span><div class="name-wrap"><span class="edit-name" style="color:var(--muted);font-size:13px">Gelöschte Kategorien</span></div><span class="ramt" style="color:var(--coral-dk)">${fmt(orphanTotal)}</span><button class="delbtn" style="font-size:11px;padding:2px 7px" title="Bereinigen">löschen</button>`;
+    ro.querySelector('.delbtn').onclick=async ev=>{ev.stopPropagation();M.variableEntries=(M.variableEntries||[]).filter(en=>knownCatIds.has(en.categoryId));render();try{await save();}catch(err){console.error(err);snack('⚠️ Speichern fehlgeschlagen');}};
+    sec.appendChild(ro);
+  }
   const[ab,af]=addBtn('cf','+ Neue Kategorie','peach','fpeach');sec.appendChild(ab);
   af.innerHTML=`<div class="frow"><input class="fi" id="ci" placeholder="🌟" style="width:52px;text-align:center;font-size:20px"><input class="fi fi-h" id="cn" list="sugg" placeholder="Kategoriename"><button class="bsave" id="cs">OK</button><button class="bcanc" id="cc">✕</button></div>`;
   sec.appendChild(af);
@@ -1056,12 +1068,16 @@ async function buildSavingsPage(){
     const card=mk('div','acc-card');
     card.style.borderLeftColor=ACC_COLORS[i%ACC_COLORS.length];
     card.innerHTML=`<div class="acc-top"><span class="acc-name">${acc.icon||'🏦'} ${esc(acc.name)}</span>
-      <button class="bsave" style="padding:6px 12px;font-size:13px" data-accid="${acc.id}">+ Hinzufügen</button></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="bsave acc-add-btn" style="padding:6px 12px;font-size:13px">+ Hinzufügen</button>
+        <button class="acc-del-btn" style="background:none;border:1px solid rgba(200,80,80,.3);color:var(--coral-dk);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:13px;opacity:.7" title="Konto löschen">✕ Konto</button>
+      </div></div>
       <div class="acc-bal">${fmt(bal)}</div>
       <div class="acc-meta">Startguthaben + ${fmt(deps+mans)} eingezahlt · ${fmt(wds)} ausgegeben</div>
       <div class="acc-start-row"><span class="acc-start-lbl">Startguthaben:</span>
       <input class="acc-start-in" type="number" value="${acc.startingBalance||''}" placeholder="0,00" step="0.01" data-accid="${acc.id}"></div>`;
-    card.querySelector('.bsave').onclick=()=>{manAccId=acc.id;document.getElementById('manTitle').textContent=`${acc.icon||''} ${acc.name}: Betrag hinzufügen`;document.getElementById('manDate').value=today();document.getElementById('manAmt').value='';document.getElementById('manDesc').value='';document.getElementById('manOvl').classList.add('open');};
+    card.querySelector('.acc-add-btn').onclick=()=>{manAccId=acc.id;document.getElementById('manTitle').textContent=`${acc.icon||''} ${acc.name}: Betrag hinzufügen`;document.getElementById('manDate').value=today();document.getElementById('manAmt').value='';document.getElementById('manDesc').value='';document.getElementById('manOvl').classList.add('open');};
+    card.querySelector('.acc-del-btn').onclick=()=>delSavAcc(acc.id);
     card.querySelector('.acc-start-in').addEventListener('change',async e=>{acc.startingBalance=parseFloat(e.target.value)||0;await saveSett();buildSavingsPage();});
     c.appendChild(card);
   });
@@ -1177,6 +1193,20 @@ async function addSavAcc(){
   const n=document.getElementById('accN').value.trim();if(!n){snack('Bitte Namen eingeben');return;}
   S.savingsAccounts=S.savingsAccounts||[];S.savingsAccounts.push({id:uid(),name:n,icon:'🏦',startingBalance:0});
   await saveSett();showF('acf',false);savLoaded=false;buildSavingsPage();
+}
+async function delSavAcc(id){
+  const acc=(S.savingsAccounts||[]).find(a=>a.id===id);
+  if(!acc)return;
+  if(!confirm(`"${acc.name}" wirklich löschen?\nAlle Buchungen dieses Kontos werden ebenfalls gelöscht.`))return;
+  S.savingsAccounts=(S.savingsAccounts||[]).filter(a=>a.id!==id);
+  if(SAV){
+    SAV.deposits=(SAV.deposits||[]).filter(d=>d.accountId!==id);
+    SAV.withdrawals=(SAV.withdrawals||[]).filter(w=>w.accountId!==id);
+    SAV.manualAdditions=(SAV.manualAdditions||[]).filter(m=>m.accountId!==id);
+  }
+  try{await Promise.all([saveSett(),SAV?savSAV():Promise.resolve()]);}
+  catch(e){console.error('delSavAcc:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  buildSavingsPage();
 }
 async function saveManualAddition(){
   const a=parseFloat(document.getElementById('manAmt').value),dt=document.getElementById('manDate').value||today(),d=document.getElementById('manDesc').value.trim();
