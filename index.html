@@ -213,6 +213,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .loading{text-align:center;padding:48px;color:var(--muted);font-size:15px}
 .snack{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:300;white-space:nowrap}
 .snack.show{opacity:1}
+
+/* BACKGROUND DECO */
+.bg-deco{position:fixed;inset:0;pointer-events:none;z-index:45;overflow:hidden;opacity:.13}
+.bg-deco span{position:absolute;line-height:1;user-select:none}
+
+/* ICON EDITABLE */
+.ico-btn{cursor:pointer;transition:transform .15s}
+.ico-btn:hover{transform:scale(1.25)}
 </style>
 </head>
 <body>
@@ -372,6 +380,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- BACKGROUND DECO -->
+<div class="bg-deco" aria-hidden="true">
+  <span style="font-size:96px;top:3%;right:4%">🦄</span>
+  <span style="font-size:72px;top:20%;left:1%">🌸</span>
+  <span style="font-size:80px;top:36%;right:3%">💜</span>
+  <span style="font-size:68px;top:52%;left:3%">🌷</span>
+  <span style="font-size:76px;top:68%;right:7%">🩷</span>
+  <span style="font-size:64px;bottom:20%;left:2%">🌼</span>
+  <span style="font-size:82px;bottom:8%;right:36%">🌺</span>
+  <span style="font-size:70px;top:12%;right:32%">💗</span>
+</div>
+
 <datalist id="sugg"></datalist>
 <div class="snack" id="snack"></div>
 
@@ -420,7 +440,7 @@ const DEF_CATS=[
   {id:'geschenke',name:'Geschenke',          icon:'🎀'},
   {id:'auto',     name:'Auto & Benzin',      icon:'🚗'},
   {id:'urlaub',   name:'Urlaub & Reisen',    icon:'✈️'},
-  {id:'pers',     name:'Persönliche Dinge',  icon:'💅'},
+  {id:'pers',     name:'Persönliche Dinge',  icon:'🪞'},
   {id:'sonst',    name:'Sonstiges',          icon:'🌟'},
 ];
 
@@ -460,7 +480,7 @@ async function loadSettings(){
       if(!S.fixedCosts.find(f=>f.id==='sparen'))S.fixedCosts.splice(3,0,clone(DEF_FX[3]));
     }
     // Migration: update icons to latest version
-    const catIcons={'essen':'🛒','ausgehen':'🍷','gesund':'🏥','tiere':'🐾','klamotten':'👠','drogerie':'🧴','bildung':'📚','geschenke':'🎀','auto':'🚗','urlaub':'✈️','pers':'💅','sonst':'🌟'};
+    const catIcons={'essen':'🛒','ausgehen':'🍷','gesund':'🏥','tiere':'🐾','klamotten':'👠','drogerie':'🧴','bildung':'📚','geschenke':'🎀','auto':'🚗','urlaub':'✈️','pers':'🪞','sonst':'🌟'};
     let iconChanged=false;
     (S.categories||[]).forEach(c=>{if(catIcons[c.id]&&c.icon!==catIcons[c.id]){c.icon=catIcons[c.id];iconChanged=true;}});
     (S.fixedCosts||[]).forEach(f=>{if(f.id==='sparen'&&(f.icon==='🐷'||f.icon==='💰')){f.icon='🌱';iconChanged=true;}});
@@ -589,17 +609,19 @@ async function delExtra(id){M.extraIncome=M.extraIncome.filter(e=>e.id!==id);awa
 function buildFixed(){
   const sec=mk('div','card');
   const tot=(M.fixedCosts||[]).reduce((s,fc)=>s+effAmt(fc),0);
-  const hd=mk('div','card-hd fix');hd.innerHTML=`<span class="ctitle">📌 Fixe Ausgaben</span><span class="ctotal">${fmt(tot)}</span>`;sec.appendChild(hd);
+  const hd=mk('div','card-hd fix');hd.innerHTML=`<span class="ctitle">🏷️ Fixe Ausgaben</span><span class="ctotal">${fmt(tot)}</span>`;sec.appendChild(hd);
   for(const fc of(M.fixedCosts||[])){
     const st=checkedSt(fc);
     const n=fc.subs?fc.subs.length:0;
+    const sfx=S.fixedCosts.find(f=>f.id===fc.id);
+    const displayIcon=sfx?.icon||fc.icon||'🏷️';
     const row=mk('div',`fx-row row ${st}`);
     let dotHtml=`<div class="sdot ${st}">${st==='done'?'✓':st==='partial'?'~':''}</div>`;
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
     let amtHtml=n===0?`<input class="amt-in" type="number" value="${fc.amount||''}" placeholder="0,00" step="0.01">`:
                 `<span class="ramt">${fmt(effAmt(fc))}</span>`;
     let arrHtml=`<span class="arr">›</span>`;
-    row.innerHTML=`${dotHtml}<span class="ico">${fc.icon||'📌'}</span>
+    row.innerHTML=`${dotHtml}<span class="ico">${displayIcon}</span>
       <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
       ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
 
@@ -753,8 +775,8 @@ async function addFx(){
   const n=document.getElementById('fn').value.trim(),a=parseFloat(document.getElementById('fa').value)||0;
   if(!n){snack('Bitte Namen eingeben');return;}
   const id=uid();
-  S.fixedCosts.push({id,name:n,icon:'📌',def:a,subs:[]});
-  M.fixedCosts.push({id,name:n,icon:'📌',amount:a,checked:false,paidDate:null,subs:[]});
+  S.fixedCosts.push({id,name:n,icon:'🏷️',def:a,subs:[]});
+  M.fixedCosts.push({id,name:n,icon:'🏷️',amount:a,checked:false,paidDate:null,subs:[]});
   addSugg(n);await Promise.all([save(),saveSett()]);showF('ff',false);render();
 }
 
@@ -765,16 +787,17 @@ function buildVariable(){
   sec.innerHTML=`<div class="card-hd var"><span class="ctitle">💳 Variable Ausgaben</span><span class="ctotal">${fmt(tot)}</span></div>`;
   for(const cat of(S.categories||[])){
     const t=catTotal(cat.id),r=mk('div','row var-row');
-    r.innerHTML=`<span class="ico">${cat.icon||'🌟'}</span>
+    r.innerHTML=`<span class="ico ico-btn" title="Icon ändern">${cat.icon||'🌟'}</span>
       <div class="name-wrap"><span class="edit-name">${esc(cat.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
       <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><span class="arr">›</span><button class="delbtn">✕</button>`;
+    r.querySelector('.ico-btn').onclick=e=>{e.stopPropagation();const v=prompt('Neues Emoji für "'+cat.name+'":',cat.icon||'🌟');if(v&&v.trim())changeCatIcon(cat.id,v.trim());};
     r.querySelector('.edit-ico').onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',cat.name);if(v&&v.trim())renameCat(cat.id,v.trim());};
     r.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delCat(cat.id);};
-    r.onclick=e=>{if(['edit-ico','delbtn'].some(c=>e.target.classList.contains(c)))return;openVarSheet(cat.id,cat.name,cat.icon);};
+    r.onclick=e=>{if(['ico-btn','edit-ico','delbtn'].some(c=>e.target.classList.contains(c)))return;openVarSheet(cat.id,cat.name,cat.icon);};
     sec.appendChild(r);
   }
   const[ab,af]=addBtn('cf','+ Neue Kategorie','peach','fpeach');sec.appendChild(ab);
-  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="cn" list="sugg" placeholder="Kategoriename"><button class="bsave" id="cs">Hinzufügen</button><button class="bcanc" id="cc">Abbrechen</button></div>`;
+  af.innerHTML=`<div class="frow"><input class="fi" id="ci" placeholder="🌟" style="width:52px;text-align:center;font-size:20px"><input class="fi fi-h" id="cn" list="sugg" placeholder="Kategoriename"><button class="bsave" id="cs">OK</button><button class="bcanc" id="cc">✕</button></div>`;
   sec.appendChild(af);
   af.querySelector('#cs').onclick=addCat;af.querySelector('#cc').onclick=()=>showF('cf',false);
   return sec;
@@ -788,8 +811,15 @@ async function delCat(id){
   await Promise.all([saveSett(),save()]);render();
 }
 async function addCat(){
-  const n=document.getElementById('cn').value.trim();if(!n){snack('Bitte Namen eingeben');return;}
-  S.categories.push({id:uid(),name:n,icon:'🌟'});addSugg(n);await saveSett();showF('cf',false);render();
+  const n=document.getElementById('cn').value.trim();
+  const ico=document.getElementById('ci').value.trim()||'🌟';
+  if(!n){snack('Bitte Namen eingeben');return;}
+  S.categories.push({id:uid(),name:n,icon:ico});
+  addSugg(n);await saveSett();showF('cf',false);render();
+}
+async function changeCatIcon(id,icon){
+  const c=S.categories.find(c=>c.id===id);if(c)c.icon=icon;
+  await saveSett();render();
 }
 function openVarSheet(cid,cname,cicon){
   activeCat={id:cid,name:cname,icon:cicon};
