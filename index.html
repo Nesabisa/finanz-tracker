@@ -242,7 +242,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- PAGE: SPAREN -->
 <div class="page" id="page-savings">
-  <div class="page-hdr sav-hdr"><h2>💰 Sparen</h2><p>Kontenübersicht & Entwicklung</p></div>
+  <div class="page-hdr sav-hdr"><h2>🌱 Sparen</h2><p>Kontenübersicht & Entwicklung</p></div>
   <div class="content" id="savContent"><div class="loading">Lade...</div></div>
 </div>
 
@@ -250,7 +250,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <nav class="bnav">
   <button class="active" data-page="budget"><span class="ni">🏠</span>Haushalt</button>
   <button data-page="stats"><span class="ni">📊</span>Statistik</button>
-  <button data-page="savings"><span class="ni">💰</span>Sparen</button>
+  <button data-page="savings"><span class="ni">🌱</span>Sparen</button>
 </nav>
 
 <!-- FIXED COST SHEET -->
@@ -389,7 +389,7 @@ const DEF_FX=[
   {id:'sparkasse',name:'Sparkasse',               icon:'🏦',def:0,     subs:[
     {id:'sp1',name:'Sparkasse 1',def:150,accId:'sparkasse'},
     {id:'sp2',name:'Sparkasse 2',def:100,accId:'sparkasse'}]},
-  {id:'sparen',   name:'Sparen',                  icon:'💰',def:0,     subs:[
+  {id:'sparen',   name:'Sparen',                  icon:'🌱',def:0,     subs:[
     {id:'sv1',name:'Trade Republic',def:600,accId:'tr'},
     {id:'sv2',name:'ING-DiBa',      def:400,accId:'ing'},
     {id:'sv3',name:'Sparen 3',      def:50, accId:''}]},
@@ -418,10 +418,10 @@ const DEF_CATS=[
   {id:'drogerie', name:'Drogerie',           icon:'🧴'},
   {id:'bildung',  name:'Bildung',            icon:'📚'},
   {id:'geschenke',name:'Geschenke',          icon:'🎀'},
-  {id:'auto',     name:'Auto & Benzin',      icon:'⛽'},
-  {id:'urlaub',   name:'Urlaub & Reisen',    icon:'🧳'},
+  {id:'auto',     name:'Auto & Benzin',      icon:'🚗'},
+  {id:'urlaub',   name:'Urlaub & Reisen',    icon:'✈️'},
   {id:'pers',     name:'Persönliche Dinge',  icon:'💅'},
-  {id:'sonst',    name:'Sonstiges',          icon:'🗂️'},
+  {id:'sonst',    name:'Sonstiges',          icon:'🌟'},
 ];
 
 const DEF_ACCS=[
@@ -460,10 +460,10 @@ async function loadSettings(){
       if(!S.fixedCosts.find(f=>f.id==='sparen'))S.fixedCosts.splice(3,0,clone(DEF_FX[3]));
     }
     // Migration: update icons to latest version
-    const catIcons={'essen':'🛒','ausgehen':'🍷','gesund':'🏥','tiere':'🐾','klamotten':'👠','drogerie':'🧴','bildung':'📚','geschenke':'🎀','auto':'⛽','urlaub':'🧳','pers':'💅','sonst':'🗂️'};
+    const catIcons={'essen':'🛒','ausgehen':'🍷','gesund':'🏥','tiere':'🐾','klamotten':'👠','drogerie':'🧴','bildung':'📚','geschenke':'🎀','auto':'🚗','urlaub':'✈️','pers':'💅','sonst':'🌟'};
     let iconChanged=false;
     (S.categories||[]).forEach(c=>{if(catIcons[c.id]&&c.icon!==catIcons[c.id]){c.icon=catIcons[c.id];iconChanged=true;}});
-    (S.fixedCosts||[]).forEach(f=>{if(f.id==='sparen'&&f.icon==='🐷'){f.icon='💰';iconChanged=true;}});
+    (S.fixedCosts||[]).forEach(f=>{if(f.id==='sparen'&&(f.icon==='🐷'||f.icon==='💰')){f.icon='🌱';iconChanged=true;}});
     if(iconChanged||combined)await setDoc(settRef(),S);
   } else {
     S={fixedCosts:clone(DEF_FX),categories:clone(DEF_CATS),recurring:[],savingsAccounts:clone(DEF_ACCS),suggestions:[]};
