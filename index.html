@@ -229,8 +229,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .del-btns{display:flex;gap:8px;margin-bottom:8px}
 
 .loading{text-align:center;padding:48px;color:var(--muted);font-size:15px}
-.snack{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:300;white-space:nowrap}
-.snack.show{opacity:1}
+.snack{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:300;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.snack.show{opacity:1;pointer-events:auto}
+.snack-undo{background:rgba(255,255,255,.22);border:none;color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0}
+.snack-undo:active{background:rgba(255,255,255,.38)}
 
 /* ICON EDITABLE */
 .ico-btn{cursor:pointer;transition:transform .15s}
@@ -293,6 +295,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="frow">
           <input class="fi fi-h" id="subName" list="sugg" placeholder="Name (z.B. Katzenkrankenversicherung)">
           <input class="fi" type="number" id="subAmt" placeholder="€" step="0.01" style="width:80px">
+        </div>
+        <div class="frow" id="subAccRow" style="display:none">
+          <select class="fi" id="subAccSel" style="flex:1"></select>
         </div>
         <div class="frow" style="margin:0">
           <button class="bsave" id="subSave">Hinzufügen</button>
@@ -399,7 +404,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <input type="file" id="importFile" accept=".json" style="display:none">
 <datalist id="sugg"></datalist>
-<div class="snack" id="snack"></div>
+<div class="snack" id="snack"><span id="snackMsg"></span><button class="snack-undo" id="snackUndo" style="display:none">↩ Rückgängig</button></div>
 
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -560,7 +565,24 @@ const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&g
 const fmt=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n||0);
 const fmtD=iso=>{if(!iso)return'—';const[,m,d]=iso.split('-');return`${d}.${m}.`;};
 const mk=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
-function snack(msg){const e=document.getElementById('snack');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500);}
+let _undo=null,_undoTimer=null;
+function snack(msg,backup){
+  clearTimeout(_undoTimer);_undo=backup||null;
+  document.getElementById('snackMsg').textContent=msg;
+  document.getElementById('snackUndo').style.display=backup?'':'none';
+  const e=document.getElementById('snack');e.classList.add('show');
+  _undoTimer=setTimeout(()=>{e.classList.remove('show');_undo=null;},backup?4500:2500);
+}
+async function undoLast(){
+  if(!_undo)return;
+  clearTimeout(_undoTimer);document.getElementById('snack').classList.remove('show');
+  const{m,sav}=_undo;_undo=null;
+  M=m;if(sav!==null)SAV=sav;
+  render();renderFxBody();
+  try{await save();if(sav!==null)await savSAV();}
+  catch(e){console.error('undo:',e);snack('⚠️ Rückgängig fehlgeschlagen');}
+  snack('↩ Rückgängig gemacht ✓');
+}
 function showF(id,show){const f=document.getElementById(id);if(f)f.style.display=show?'block':'none';}
 function closeAllSheets(){['fxOvl','varOvl','manOvl','sondOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
 
@@ -871,28 +893,36 @@ async function renameFx(id,name){
 async function addSub(){
   const n=document.getElementById('subName').value.trim(),a=parseFloat(document.getElementById('subAmt').value)||0;
   if(!n){snack('Bitte Namen eingeben');return;}
+  const backup={m:clone(M),sav:null};
+  const isAccFx=activeFxId==='sparen'||activeFxId==='sparkasse';
+  const accId=isAccFx?(document.getElementById('subAccSel').value||''):'';
   const id=uid();
   const fc=M.fixedCosts.find(f=>f.id===activeFxId);
   const sf=S.fixedCosts.find(f=>f.id===activeFxId);
   if(!fc)return;
-  fc.subs=fc.subs||[];fc.subs.push({id,name:n,amount:a,checked:false,paidDate:null,accId:''});
-  if(sf){sf.subs=sf.subs||[];sf.subs.push({id,name:n,def:a,accId:''});}
+  fc.subs=fc.subs||[];fc.subs.push({id,name:n,amount:a,checked:false,paidDate:null,accId});
+  if(sf){sf.subs=sf.subs||[];sf.subs.push({id,name:n,def:a,accId});}
   document.getElementById('subName').value='';document.getElementById('subAmt').value='';
   showF('fxAddForm',false);renderFxBody();render();
+  snack('Hinzugefügt ✓',backup);
   addSugg(n);
   try{await Promise.all([save(),saveSett()]);}
   catch(e){console.error('addSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function delSub(fid,sid){
+  const backup={m:clone(M),sav:SAV?clone(SAV):null};
   const fc=M.fixedCosts.find(f=>f.id===fid);if(fc)fc.subs=(fc.subs||[]).filter(s=>s.id!==sid);
   const sf=S.fixedCosts.find(f=>f.id===fid);if(sf)sf.subs=(sf.subs||[]).filter(s=>s.id!==sid);
   renderFxBody();render();
+  snack('Gelöscht',backup);
   try{await Promise.all([save(),saveSett()]);}
   catch(e){console.error('delSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function delFx(id){
+  const backup={m:clone(M),sav:null};
   M.fixedCosts=M.fixedCosts.filter(f=>f.id!==id);S.fixedCosts=S.fixedCosts.filter(f=>f.id!==id);
   render();
+  snack('Gelöscht',backup);
   try{await Promise.all([save(),saveSett()]);}
   catch(e){console.error('delFx:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
@@ -1304,9 +1334,24 @@ document.getElementById('nextBtn').addEventListener('click',()=>navTo(1));
 document.getElementById('closeFx').onclick=()=>document.getElementById('fxOvl').classList.remove('open');
 document.getElementById('fxOvl').onclick=e=>{if(e.target===document.getElementById('fxOvl'))document.getElementById('fxOvl').classList.remove('open');};
 document.getElementById('fxTitle').addEventListener('change',async e=>{const fc=M.fixedCosts.find(f=>f.id===activeFxId);if(fc){await renameFx(fc.id,e.target.value);}});
-document.getElementById('fxAddSubTrig').onclick=()=>{const f=document.getElementById('fxAddForm');showF('fxAddForm',f.style.display!=='block');if(f.style.display==='block')document.getElementById('subName').focus();};
+document.getElementById('fxAddSubTrig').onclick=()=>{
+  const f=document.getElementById('fxAddForm'),showing=f.style.display==='block';
+  if(!showing){
+    const isAccFx=activeFxId==='sparen'||activeFxId==='sparkasse';
+    const row=document.getElementById('subAccRow');row.style.display=isAccFx?'':'none';
+    if(isAccFx){
+      const accs=S.savingsAccounts||[];
+      const sel=document.getElementById('subAccSel');
+      sel.innerHTML=`<option value="">— Konto wählen —</option>`+accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+      if(accs.length===1)sel.value=accs[0].id;
+    }
+  }
+  showF('fxAddForm',!showing);
+  if(!showing)document.getElementById('subName').focus();
+};
 document.getElementById('subSave').onclick=addSub;
 document.getElementById('subCanc').onclick=()=>showF('fxAddForm',false);
+document.getElementById('snackUndo').onclick=undoLast;
 
 // Variable sheet
 document.getElementById('closeVar').onclick=()=>document.getElementById('varOvl').classList.remove('open');
