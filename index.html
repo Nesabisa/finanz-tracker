@@ -380,6 +380,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 
+<input type="file" id="importFile" accept=".json" style="display:none">
 <datalist id="sugg"></datalist>
 <div class="snack" id="snack"></div>
 
@@ -567,7 +568,7 @@ function render(){
     if(h){h.textContent=hEmoji;h.onclick=changeNavEmoji;}
   });
   const c=document.getElementById('content');c.innerHTML='';
-  c.appendChild(buildIncome());c.appendChild(buildFixed());c.appendChild(buildVariable());
+  c.appendChild(buildIncome());c.appendChild(buildFixed());c.appendChild(buildVariable());c.appendChild(buildBackup());
 }
 async function changeNavEmoji(){
   const v=prompt('Emoji für diesen Monat (z.B. 🩷 ✨ 🌸 🦋):',M.navEmoji||'💜');
@@ -1102,6 +1103,47 @@ function addBtn(fid,label,color,bgCls){
   const b=mk('button',`addbtn ${color}`);b.textContent=label;b.onclick=()=>showF(fid,document.getElementById(fid)?.style.display!=='block');
   const f=mk('div',`fwrap ${bgCls}`);f.id=fid;return[b,f];
 }
+
+// ── BACKUP
+function buildBackup(){
+  const sec=mk('div','card');
+  sec.innerHTML=`<div class="card-hd" style="border-left:4px solid var(--muted)"><span class="ctitle">⚙️ Backup</span></div>
+    <div class="row" style="gap:10px;padding:14px 16px">
+      <button class="bsave" style="flex:1" id="expBtn">📤 Exportieren</button>
+      <button class="bsave" style="flex:1;background:linear-gradient(135deg,var(--peach-dk),var(--sun-dk))" id="impBtn">📥 Importieren</button>
+    </div>
+    <div style="padding:0 16px 14px;font-size:12px;color:var(--muted)">💡 Tipp: App auf Computer & Handy öffnen — Daten sind automatisch überall gleich (Firebase-Sync).</div>`;
+  sec.querySelector('#expBtn').onclick=exportData;
+  sec.querySelector('#impBtn').onclick=()=>document.getElementById('importFile').click();
+  return sec;
+}
+async function exportData(){
+  snack('Exportiere... 📤');
+  const months={};
+  for(let i=0;i<13;i++){let y=yr,m=mo-i;while(m<0){m+=12;y--;}const key=`${y}-${pad(m+1)}`;
+    try{const s=await getDoc(doc(db,'personal_months',key));if(s.exists())months[key]=s.data();}catch(e){}}
+  if(!SAV)await loadSavings();
+  const data={version:1,exportDate:new Date().toISOString(),settings:S,months,savings:SAV};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`finanz-backup-${today()}.json`;a.click();
+  URL.revokeObjectURL(url);snack('Backup gespeichert! ✅');
+}
+document.getElementById('importFile').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(!data.version||!data.settings){snack('Ungültige Datei ❌');return;}
+    if(!confirm('Alle aktuellen Daten mit dem Backup überschreiben?'))return;
+    snack('Importiere... 📥');
+    await setDoc(settRef(),data.settings);
+    if(data.savings)await setDoc(savRef(),data.savings);
+    for(const[key,mData]of Object.entries(data.months||{})){await setDoc(doc(db,'personal_months',key),mData);}
+    snack('Import erfolgreich! 🌸');
+    S=null;await init();
+  }catch(err){snack('Fehler beim Import ❌');console.error(err);}
+  e.target.value='';
+});
 
 // ── EVENTS
 document.querySelectorAll('.bnav button').forEach(btn=>{
