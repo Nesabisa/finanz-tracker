@@ -608,13 +608,7 @@ async function delExtra(id){M.extraIncome=M.extraIncome.filter(e=>e.id!==id);awa
 function buildFixed(){
   const sec=mk('div','card');
   const tot=(M.fixedCosts||[]).reduce((s,fc)=>s+effAmt(fc),0);
-  const paid=(M.fixedCosts||[]).reduce((s,fc)=>fc.subs&&fc.subs.length?s+fc.subs.filter(si=>si.checked).reduce((a,si)=>a+(si.amount||0),0):s+(fc.checked?fc.amount||0:0),0);
-  const hd=mk('div','card-hd fix');
-  hd.innerHTML=`<span class="ctitle">🏷️ Fixe Ausgaben</span>
-    <span style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">
-      <span class="ctotal">${fmt(paid)}</span>
-      <span style="font-size:11px;color:var(--muted)">von ${fmt(tot)}</span>
-    </span>`;
+  const hd=mk('div','card-hd fix');hd.innerHTML=`<span class="ctitle">🏷️ Fixe Ausgaben</span><span class="ctotal">${fmt(tot)}</span>`;
   sec.appendChild(hd);
   for(const fc of(M.fixedCosts||[])){
     const st=checkedSt(fc);
