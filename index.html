@@ -503,7 +503,12 @@ async function loadOrInitMonth(){
     // Firebase read failed → leerer Monat (kein Crash)
     snap=null;
   }
-  if(snap?.exists()){
+  // Wenn der Monat in der Zukunft liegt UND kein Gehalt eingetragen wurde
+  // → frischen Start erzwingen (verhindert korrupte Daten vom Navigation-Race)
+  const nowYr=new Date().getFullYear(),nowMo=new Date().getMonth();
+  const isFuture=(yr>nowYr)||(yr===nowYr&&mo>nowMo);
+  const hasRealData=snap?.exists()&&!!(snap.data().salary||snap.data().variableEntries?.length||snap.data().extraIncome?.length);
+  if(snap?.exists()&&(!isFuture||hasRealData)){
     M=snap.data();
     M.extraIncome=M.extraIncome||[];
     M.fixedCosts=(M.fixedCosts||[]).map(fc=>({...fc,subs:(fc.subs||[])}));
@@ -658,7 +663,9 @@ function buildIncome(){
   af.innerHTML=`<div class="frow"><input class="fi fi-h" id="xd" list="sugg" placeholder="Beschreibung"><input class="fi" type="number" id="xa" placeholder="€" step="0.01" style="width:80px"></div>
     <div class="frow" style="margin:0"><button class="bsave" id="xs">Hinzufügen</button><button class="bcanc" id="xc">Abbrechen</button></div>`;
   sec.appendChild(af);
-  let t;sec.querySelector('#salIn').addEventListener('input',e=>{clearTimeout(t);t=setTimeout(async()=>{M.salary=parseFloat(e.target.value)||0;await save();},700);});
+  const salIn=sec.querySelector('#salIn');
+  salIn.addEventListener('change',async e=>{if(!M)return;M.salary=parseFloat(e.target.value)||0;await save();});
+  salIn.addEventListener('blur',  async e=>{if(!M)return;M.salary=parseFloat(e.target.value)||0;await save();});
   af.querySelector('#xs').onclick=addExtra;af.querySelector('#xc').onclick=()=>showF('ef',false);
   return sec;
 }
@@ -771,14 +778,16 @@ function renderFxBody(){
 }
 
 async function toggleFxDirect(id){
-  const fc=M.fixedCosts.find(f=>f.id===id);if(!fc)return;
+  const fc=M?.fixedCosts?.find(f=>f.id===id);if(!fc)return;
   fc.checked=!fc.checked;fc.paidDate=fc.checked?today():null;
-  await save();renderFxBody();render();
+  renderFxBody();render(); // sofort zeigen
+  try{await save();}catch(e){console.error('toggleFxDirect:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function toggleSub(fid,sid){
-  if(!SAV)await loadSavings();
-  const fc=M.fixedCosts.find(f=>f.id===fid),si=fc?.subs?.find(s=>s.id===sid);if(!si)return;
+  const fc=M?.fixedCosts?.find(f=>f.id===fid),si=fc?.subs?.find(s=>s.id===sid);if(!si)return;
   si.checked=!si.checked;si.paidDate=si.checked?today():null;
+  renderFxBody();render(); // sofort zeigen
+  try{if(!SAV)await loadSavings();
   // Auto-detect account by name if no accId
   let accId=si.accId||'';
   if(!accId){
@@ -791,26 +800,31 @@ async function toggleSub(fid,sid){
     if(si.checked)SAV.deposits.push({id:uid(),key,accountId:accId,amount:si.amount||0,date:today(),month:`${yr}-${pad(mo+1)}`,desc:si.name,source:'auto'});
     await savSAV();savLoaded=false;
   }
-  await save();renderFxBody();render();
+  await save();
+  }catch(e){console.error('toggleSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function toggleAllSubs(fid){
-  if(!SAV)await loadSavings();
-  const fc=M.fixedCosts.find(f=>f.id===fid);if(!fc||!fc.subs?.length)return;
-  const newState=!fc.subs.every(s=>s.checked); // alle an → alle aus, sonst alle an
-  let savChanged=false;
-  for(const si of fc.subs){
-    si.checked=newState;si.paidDate=newState?today():null;
-    let accId=si.accId||'';
-    if(!accId){const lower=si.name.toLowerCase();accId=(S.savingsAccounts||[]).find(a=>lower.includes(a.name.toLowerCase().split(' ')[0]))?.id||'';}
-    if(accId){
-      const key=`${fid}-${si.id}-${yr}-${pad(mo+1)}`;
-      SAV.deposits=(SAV.deposits||[]).filter(d=>d.key!==key);
-      if(newState)SAV.deposits.push({id:uid(),key,accountId:accId,amount:si.amount||0,date:today(),month:`${yr}-${pad(mo+1)}`,desc:si.name,source:'auto'});
-      savChanged=true;
+  const fc=M?.fixedCosts?.find(f=>f.id===fid);if(!fc||!fc.subs?.length)return;
+  // Sofort visuell updaten (optimistic UI)
+  const newState=!fc.subs.every(s=>s.checked);
+  fc.subs.forEach(si=>{si.checked=newState;si.paidDate=newState?today():null;});
+  render(); // sofort zeigen
+  try{
+    if(!SAV)await loadSavings();
+    let savChanged=false;
+    for(const si of fc.subs){
+      let accId=si.accId||'';
+      if(!accId){const lower=si.name.toLowerCase();accId=(S.savingsAccounts||[]).find(a=>lower.includes(a.name.toLowerCase().split(' ')[0]))?.id||'';}
+      if(accId){
+        const key=`${fid}-${si.id}-${yr}-${pad(mo+1)}`;
+        SAV.deposits=(SAV.deposits||[]).filter(d=>d.key!==key);
+        if(newState)SAV.deposits.push({id:uid(),key,accountId:accId,amount:si.amount||0,date:today(),month:`${yr}-${pad(mo+1)}`,desc:si.name,source:'auto'});
+        savChanged=true;
+      }
     }
-  }
-  if(savChanged){await savSAV();savLoaded=false;}
-  await save();render();
+    if(savChanged){await savSAV();savLoaded=false;}
+    await save();
+  }catch(e){console.error('toggleAllSubs:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function updFxAmt(id,a){
   const fc=M.fixedCosts.find(f=>f.id===id);if(fc)fc.amount=a;
