@@ -92,6 +92,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .amt-in{width:88px;text-align:right;border:1.5px solid transparent;border-radius:8px;padding:5px 8px;font-size:14px;font-weight:700;background:transparent;color:var(--text)}
 .amt-in:focus{outline:none;border-color:var(--lav-dk);background:var(--white)}
 
+/* DRAG SORT */
+.drag-handle{display:flex;align-items:center;justify-content:center;padding:0 7px;cursor:grab;flex-shrink:0;touch-action:none;color:var(--muted);opacity:.35;-webkit-user-select:none;user-select:none;transition:opacity .15s}
+.drag-handle:active{cursor:grabbing;opacity:.9}
+.drag-active{opacity:.4!important;background:rgba(219,190,248,.18)!important;transform:scale(1.01);box-shadow:0 4px 16px rgba(139,60,200,.15)!important}
+.drop-above{box-shadow:inset 0 3px 0 var(--lav-dk)!important}
+.drop-below{box-shadow:inset 0 -3px 0 var(--lav-dk)!important}
+
 /* FIXED ROWS */
 .fx-row{background:var(--lav-bg);transition:background .25s}
 .fx-row.done{background:var(--mint-bg)}
@@ -571,6 +578,51 @@ function updateSum(){
   const el=document.getElementById('sBal');el.textContent=fmt(b);el.className='sval '+(b>=0?'pos':'neg');
 }
 
+// ── DRAG SORT
+const DRAG_ICO=`<svg width="11" height="17" viewBox="0 0 11 17" fill="currentColor" style="display:block"><circle cx="3" cy="3" r="2"/><circle cx="8" cy="3" r="2"/><circle cx="3" cy="8.5" r="2"/><circle cx="8" cy="8.5" r="2"/><circle cx="3" cy="14" r="2"/><circle cx="8" cy="14" r="2"/></svg>`;
+
+function enableDragSort(sec,rowSel,onDrop){
+  let src=null,srcIdx=-1;
+  sec.addEventListener('pointerdown',e=>{
+    const h=e.target.closest('.drag-handle');
+    if(!h||!sec.contains(h))return;
+    const row=h.closest(rowSel);if(!row)return;
+    e.preventDefault();
+    src=row;srcIdx=[...sec.querySelectorAll(rowSel)].indexOf(row);
+    src.classList.add('drag-active');h.setPointerCapture(e.pointerId);
+  },{passive:false});
+  sec.addEventListener('pointermove',e=>{
+    if(!src)return;
+    const rows=[...sec.querySelectorAll(rowSel)];
+    rows.forEach(r=>r.classList.remove('drop-above','drop-below'));
+    for(const r of rows){
+      if(r===src)continue;
+      const rect=r.getBoundingClientRect();
+      if(e.clientY>=rect.top&&e.clientY<rect.bottom){
+        r.classList.add(e.clientY<rect.top+rect.height/2?'drop-above':'drop-below');
+        break;
+      }
+    }
+  });
+  const done=()=>{
+    if(!src)return;
+    const rows=[...sec.querySelectorAll(rowSel)];
+    let dst=-1;
+    rows.forEach((r,i)=>{
+      if(r.classList.contains('drop-above'))dst=i;
+      if(r.classList.contains('drop-below'))dst=i+1;
+      r.classList.remove('drop-above','drop-below','drag-active');
+    });
+    if(dst>srcIdx)dst--;
+    if(dst>=0&&dst!==srcIdx)onDrop(srcIdx,dst);
+    src=null;srcIdx=-1;
+  };
+  sec.addEventListener('pointerup',done);
+  sec.addEventListener('pointercancel',()=>{
+    if(src){[...sec.querySelectorAll(rowSel)].forEach(r=>r.classList.remove('drop-above','drop-below','drag-active'));src=null;srcIdx=-1;}
+  });
+}
+
 // ── RENDER BUDGET
 function render(){
   document.getElementById('mlabel').textContent=`${MN[mo]} ${yr}`;
@@ -634,7 +686,7 @@ function buildFixed(){
     let amtHtml=n===0?`<input class="amt-in" type="number" value="${fc.amount||''}" placeholder="0,00" step="0.01">`:
                 `<span class="ramt">${fmt(effAmt(fc))}</span>`;
     let arrHtml=`<span class="arr">›</span>`;
-    row.innerHTML=`${dotHtml}<span class="ico">${displayIcon}</span>
+    row.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span>${dotHtml}<span class="ico">${displayIcon}</span>
       <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
       ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
 
@@ -655,10 +707,15 @@ function buildFixed(){
     }
     // All rows open sheet on click (except dot, delbtn, amt-in, edit-ico)
     row.classList.add('clickable');
-    row.onclick=e=>{if(['sdot','delbtn','amt-in','edit-ico'].some(c=>e.target.classList.contains(c)))return;openFxSheet(fc.id);};
+    row.onclick=e=>{if(['sdot','delbtn','amt-in','edit-ico','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;openFxSheet(fc.id);};
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
     sec.appendChild(row);
   }
+  enableDragSort(sec,'.fx-row',(from,to)=>{
+    const[mx]=M.fixedCosts.splice(from,1);M.fixedCosts.splice(to,0,mx);
+    const[sx]=S.fixedCosts.splice(from,1);S.fixedCosts.splice(to,0,sx);
+    render();Promise.all([save(),saveSett()]);
+  });
   const[ab,af]=addBtn('ff','+ Fixe Position hinzufügen','lav','flav');sec.appendChild(ab);
   af.innerHTML=`<div class="frow"><input class="fi fi-h" id="fn" list="sugg" placeholder="Name"><input class="fi" type="number" id="fa" placeholder="€" step="0.01" style="width:80px"></div>
     <div class="frow" style="margin:0"><button class="bsave" id="fs">Hinzufügen</button><button class="bcanc" id="fc2">Abbrechen</button></div>`;
@@ -827,15 +884,19 @@ function buildVariable(){
   sec.innerHTML=`<div class="card-hd var"><span class="ctitle">💳 Variable Ausgaben</span><span class="ctotal">${fmt(tot)}</span></div>`;
   for(const cat of(S.categories||[])){
     const t=catTotal(cat.id),r=mk('div','row var-row');
-    r.innerHTML=`<span class="ico ico-btn" title="Icon ändern">${cat.icon||'🌟'}</span>
+    r.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span><span class="ico ico-btn" title="Icon ändern">${cat.icon||'🌟'}</span>
       <div class="name-wrap"><span class="edit-name">${esc(cat.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
       <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><span class="arr">›</span><button class="delbtn">✕</button>`;
     r.querySelector('.ico-btn').onclick=e=>{e.stopPropagation();const v=prompt('Neues Emoji für "'+cat.name+'":',cat.icon||'🌟');if(v&&v.trim())changeCatIcon(cat.id,v.trim());};
     r.querySelector('.edit-ico').onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',cat.name);if(v&&v.trim())renameCat(cat.id,v.trim());};
     r.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delCat(cat.id);};
-    r.onclick=e=>{if(['ico-btn','edit-ico','delbtn'].some(c=>e.target.classList.contains(c)))return;openVarSheet(cat.id,cat.name,cat.icon);};
+    r.onclick=e=>{if(['ico-btn','edit-ico','delbtn','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;openVarSheet(cat.id,cat.name,cat.icon);};
     sec.appendChild(r);
   }
+  enableDragSort(sec,'.var-row',(from,to)=>{
+    const[cx]=S.categories.splice(from,1);S.categories.splice(to,0,cx);
+    render();saveSett();
+  });
   const[ab,af]=addBtn('cf','+ Neue Kategorie','peach','fpeach');sec.appendChild(ab);
   af.innerHTML=`<div class="frow"><input class="fi" id="ci" placeholder="🌟" style="width:52px;text-align:center;font-size:20px"><input class="fi fi-h" id="cn" list="sugg" placeholder="Kategoriename"><button class="bsave" id="cs">OK</button><button class="bcanc" id="cc">✕</button></div>`;
   sec.appendChild(af);
