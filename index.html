@@ -762,9 +762,10 @@ function buildVariable(){
     const t=catTotal(cat.id),r=mk('div','row var-row');
     r.innerHTML=`<span class="ico">${cat.icon||'🌟'}</span>
       <div class="name-wrap"><span class="edit-name">${esc(cat.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
-      <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><span class="arr">›</span>`;
+      <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><span class="arr">›</span><button class="delbtn">✕</button>`;
     r.querySelector('.edit-ico').onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',cat.name);if(v&&v.trim())renameCat(cat.id,v.trim());};
-    r.onclick=e=>{if(e.target.classList.contains('edit-ico'))return;openVarSheet(cat.id,cat.name,cat.icon);};
+    r.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delCat(cat.id);};
+    r.onclick=e=>{if(['edit-ico','delbtn'].some(c=>e.target.classList.contains(c)))return;openVarSheet(cat.id,cat.name,cat.icon);};
     sec.appendChild(r);
   }
   const[ab,af]=addBtn('cf','+ Neue Kategorie','peach','fpeach');sec.appendChild(ab);
@@ -775,6 +776,11 @@ function buildVariable(){
 }
 async function renameCat(id,name){
   const c=S.categories.find(c=>c.id===id);if(c)c.name=name;addSugg(name);await saveSett();render();
+}
+async function delCat(id){
+  S.categories=S.categories.filter(c=>c.id!==id);
+  M.variableEntries=(M.variableEntries||[]).filter(e=>e.categoryId!==id);
+  await Promise.all([saveSett(),save()]);render();
 }
 async function addCat(){
   const n=document.getElementById('cn').value.trim();if(!n){snack('Bitte Namen eingeben');return;}
