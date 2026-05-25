@@ -150,7 +150,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sub-row:last-child{border-bottom:none}
 .schk{width:24px;height:24px;border:2px solid var(--lav-dk);border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:transparent;background:var(--white);transition:all .2s}
 .schk.done{background:var(--mint-dk);border-color:var(--mint-dk);color:var(--white)}
-.sname-in{flex:1;border:1.5px solid transparent;border-radius:8px;padding:4px 8px;font-size:14px;color:var(--text);background:transparent;font-family:inherit}
+.sname-in{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-size:14px;color:var(--text);background:var(--lav-bg);font-family:inherit}
 .sname-in:focus{outline:none;border-color:var(--lav-dk);background:var(--white)}
 .samt-in{width:80px;text-align:right;border:1.5px solid transparent;border-radius:8px;padding:4px 8px;font-size:14px;font-weight:600;background:transparent;color:var(--text);font-family:inherit}
 .samt-in:focus{outline:none;border-color:var(--lav-dk);background:var(--white)}
@@ -668,7 +668,9 @@ function renderFxBody(){
         ${showAccSel?`<select class="sacc-sel"><option value="">— Konto —</option>${accOpts}</select>`:''}
         <button class="delbtn" style="font-size:12px">✕</button>`;
       r.querySelector('.schk').onclick=()=>toggleSub(fc.id,si.id);
-      r.querySelector('.sname-in').addEventListener('change',e=>updSubName(fc.id,si.id,e.target.value));
+      const nameIn=r.querySelector('.sname-in');
+      nameIn.addEventListener('change',e=>updSubName(fc.id,si.id,e.target.value));
+      nameIn.addEventListener('blur',e=>updSubName(fc.id,si.id,e.target.value));
       r.querySelector('.samt-in').addEventListener('change',e=>updSubAmt(fc.id,si.id,parseFloat(e.target.value)||0));
       r.querySelector('.delbtn').onclick=()=>delSub(fc.id,si.id);
       const sel=r.querySelector('.sacc-sel');
