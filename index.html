@@ -29,7 +29,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .page{display:none}.page.active{display:block}
 
 /* HEADER */
-.hdr{background:linear-gradient(to right,#ffc89a 0%,#ffc2d1 25%,#dbbef8 50%,#ffc2d1 75%,#ffc89a 100%);padding:18px 16px 24px;position:relative;overflow:hidden}
+.hdr{
+  background:
+    radial-gradient(ellipse 75% 65% at 18% 38%, rgba(255,255,255,.42) 0%, transparent 62%),
+    radial-gradient(ellipse 60% 52% at 80% 30%, rgba(255,255,255,.38) 0%, transparent 56%),
+    radial-gradient(ellipse 45% 38% at 55% 82%, rgba(255,255,255,.22) 0%, transparent 50%),
+    radial-gradient(ellipse 38% 32% at 68% 12%, rgba(255,255,255,.28) 0%, transparent 48%),
+    radial-gradient(ellipse 30% 25% at 35% 60%, rgba(255,255,255,.18) 0%, transparent 45%),
+    linear-gradient(to right,#ffc89a 0%,#ffc2d1 25%,#dbbef8 50%,#ffc2d1 75%,#ffc89a 100%);
+  padding:18px 16px 24px;position:relative;overflow:hidden
+}
 .hrt{font-size:42px;line-height:1;flex-shrink:1;min-width:36px;text-align:center;opacity:.28;cursor:pointer;transition:opacity .2s}
 .hrt:active{opacity:.5}
 .mnav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
@@ -445,7 +454,7 @@ let yr=new Date().getFullYear(), mo=new Date().getMonth();
 let S=null, M=null, SAV=null;
 let activeFxId=null, activeCat=null, pendingDel=null, manAccId=null;
 let eFix=false, eEin=false;
-let statsLoaded=false, savLoaded=false;
+let statsLoaded=false, savLoaded=false, isLoading=false;
 
 // ── FIRESTORE
 const pad=n=>String(n).padStart(2,'0');
@@ -482,11 +491,15 @@ async function loadSettings(){
 }
 
 async function loadOrInitMonth(){
-  const s=await getDoc(monRef());
-  if(s.exists()){
-    M=s.data();
+  let snap;
+  try{snap=await getDoc(monRef());}catch(e){
+    // Firebase read failed → leerer Monat (kein Crash)
+    snap=null;
+  }
+  if(snap?.exists()){
+    M=snap.data();
     M.extraIncome=M.extraIncome||[];
-    M.fixedCosts=M.fixedCosts||[];
+    M.fixedCosts=(M.fixedCosts||[]).map(fc=>({...fc,subs:(fc.subs||[])}));
     M.variableEntries=M.variableEntries||[];
     // Ensure Sparkasse and Sparen exist as separate items
     for(const def of[DEF_FX[2],DEF_FX[3]]){
@@ -498,8 +511,8 @@ async function loadOrInitMonth(){
     let prevSal=0;
     try{const py=mo===0?yr-1:yr,pm=mo===0?12:mo,ps=await getDoc(doc(db,'personal_months',`${py}-${pad(pm)}`));if(ps.exists())prevSal=ps.data().salary||0;}catch(e){}
     M={salary:prevSal,extraIncome:[],
-      fixedCosts:S.fixedCosts.map(makeMoFx),
-      variableEntries:clone(S.recurring).map(r=>({...r,id:uid(),date:today()}))
+      fixedCosts:(S.fixedCosts||[]).map(makeMoFx),
+      variableEntries:clone(S.recurring||[]).map(r=>({...r,id:uid(),date:today()}))
     };
     // Nicht sofort speichern — erst wenn Sabine wirklich etwas einträgt
   }
@@ -1159,6 +1172,7 @@ document.querySelectorAll('.bnav button').forEach(btn=>{
   };
 });
 function navTo(delta){
+  if(isLoading)return;
   if(delta<0){if(mo===0){mo=11;yr--;}else mo--;}
   else{if(mo===11){mo=0;yr++;}else mo++;}
   statsLoaded=false;savLoaded=false;
@@ -1166,8 +1180,8 @@ function navTo(delta){
   closeAllSheets();
   init();
 }
-document.getElementById('prevBtn').onclick=()=>navTo(-1);
-document.getElementById('nextBtn').onclick=()=>navTo(1);
+document.getElementById('prevBtn').addEventListener('click',()=>navTo(-1));
+document.getElementById('nextBtn').addEventListener('click',()=>navTo(1));
 
 // Fixed sheet
 document.getElementById('closeFx').onclick=()=>document.getElementById('fxOvl').classList.remove('open');
@@ -1199,22 +1213,29 @@ document.getElementById('closeDetail').onclick=()=>document.getElementById('deta
 
 // ── BOOT
 async function init(){
+  if(isLoading)return;
+  isLoading=true;
+  ['prevBtn','nextBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.opacity='.4';});
   document.getElementById('content').innerHTML='<div class="loading">Lade... 🌸</div>';
   try{
     if(!S)await loadSettings();
+    M=null;
     await loadOrInitMonth();
     render();
   }catch(e){
     console.error('Ladefehler:',e);
     const errDiv=document.createElement('div');
     errDiv.style.cssText='text-align:center;padding:40px;color:var(--sub)';
-    errDiv.innerHTML='⚠️ Laden fehlgeschlagen.<br><small>Internetverbindung prüfen.</small><br>';
+    errDiv.innerHTML=`⚠️ Laden fehlgeschlagen.<br><small>${e?.message||'Internetverbindung prüfen.'}</small><br>`;
     const retryBtn=document.createElement('button');
     retryBtn.className='bsave';retryBtn.style.cssText='margin-top:14px;padding:10px 24px';
-    retryBtn.textContent='🔄 Nochmal laden';retryBtn.onclick=init;
+    retryBtn.textContent='🔄 Nochmal laden';retryBtn.onclick=()=>{isLoading=false;init();};
     errDiv.appendChild(retryBtn);
     document.getElementById('content').innerHTML='';
     document.getElementById('content').appendChild(errDiv);
+  }finally{
+    isLoading=false;
+    ['prevBtn','nextBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.opacity='';});
   }
 }
 init();
