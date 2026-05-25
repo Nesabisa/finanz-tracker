@@ -30,12 +30,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* HEADER */
 .hdr{background:linear-gradient(to right,#ffc89a 0%,#ffc2d1 25%,#dbbef8 50%,#ffc2d1 75%,#ffc89a 100%);padding:18px 16px 24px;position:relative;overflow:hidden}
-.hrt{font-size:52px;line-height:1;flex-shrink:0;opacity:.28;cursor:pointer;transition:opacity .2s}
+.hrt{font-size:42px;line-height:1;flex-shrink:1;min-width:36px;text-align:center;opacity:.28;cursor:pointer;transition:opacity .2s}
 .hrt:active{opacity:.5}
-.mnav{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:16px}
-.nbtn{background:rgba(255,255,255,.3);border:none;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.mnav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
+.nbtn{background:rgba(255,255,255,.3);border:none;width:40px;height:40px;min-width:40px;flex-shrink:0;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;-webkit-tap-highlight-color:transparent}
 .nbtn:hover{background:rgba(255,255,255,.5)}
-.mlabel{font-size:21px;font-weight:800;min-width:180px;text-align:center;color:var(--text)}
+.nbtn:active{background:rgba(255,255,255,.6);transform:scale(.95)}
+.mlabel{font-size:20px;font-weight:800;min-width:130px;text-align:center;color:var(--text)}
 .sumgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .scard{background:rgba(255,255,255,.32);border-radius:14px;padding:11px 8px;text-align:center;backdrop-filter:blur(4px)}
 .slbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;opacity:.75}
@@ -1157,8 +1158,16 @@ document.querySelectorAll('.bnav button').forEach(btn=>{
     if(pg==='savings'&&!savLoaded){savLoaded=true;await buildSavingsPage();}
   };
 });
-document.getElementById('prevBtn').onclick=()=>{if(mo===0){mo=11;yr--;}else mo--;statsLoaded=false;savLoaded=false;init();};
-document.getElementById('nextBtn').onclick=()=>{if(mo===11){mo=0;yr++;}else mo++;statsLoaded=false;savLoaded=false;init();};
+function navTo(delta){
+  if(delta<0){if(mo===0){mo=11;yr--;}else mo--;}
+  else{if(mo===11){mo=0;yr++;}else mo++;}
+  statsLoaded=false;savLoaded=false;
+  document.getElementById('mlabel').textContent=`${MN[mo]} ${yr}`;
+  closeAllSheets();
+  init();
+}
+document.getElementById('prevBtn').onclick=()=>navTo(-1);
+document.getElementById('nextBtn').onclick=()=>navTo(1);
 
 // Fixed sheet
 document.getElementById('closeFx').onclick=()=>document.getElementById('fxOvl').classList.remove('open');
@@ -1197,7 +1206,15 @@ async function init(){
     render();
   }catch(e){
     console.error('Ladefehler:',e);
-    document.getElementById('content').innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)">⚠️ Laden fehlgeschlagen.<br><small>Internetverbindung prüfen und Seite neu laden.</small></div>';
+    const errDiv=document.createElement('div');
+    errDiv.style.cssText='text-align:center;padding:40px;color:var(--sub)';
+    errDiv.innerHTML='⚠️ Laden fehlgeschlagen.<br><small>Internetverbindung prüfen.</small><br>';
+    const retryBtn=document.createElement('button');
+    retryBtn.className='bsave';retryBtn.style.cssText='margin-top:14px;padding:10px 24px';
+    retryBtn.textContent='🔄 Nochmal laden';retryBtn.onclick=init;
+    errDiv.appendChild(retryBtn);
+    document.getElementById('content').innerHTML='';
+    document.getElementById('content').appendChild(errDiv);
   }
 }
 init();
