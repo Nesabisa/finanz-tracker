@@ -495,7 +495,7 @@ async function loadOrInitMonth(){
       fixedCosts:S.fixedCosts.map(makeMoFx),
       variableEntries:clone(S.recurring).map(r=>({...r,id:uid(),date:today()}))
     };
-    await setDoc(monRef(),M);
+    // Nicht sofort speichern — erst wenn Sabine wirklich etwas einträgt
   }
 }
 
