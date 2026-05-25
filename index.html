@@ -880,7 +880,7 @@ async function saveEntry(){
   document.getElementById('eAmt').value='';document.getElementById('eDesc').value='';document.getElementById('eDate').value=today();
   eFix=eEin=false;updChips();showF('varForm',false);renderVarBody();render();
 }
-async function delEntry(id){M.variableEntries=M.variableEntries.filter(e=>e.id!==id);await save();renderVarBody();updateSum();}
+async function delEntry(id){M.variableEntries=M.variableEntries.filter(e=>e.id!==id);await save();renderVarBody();render();}
 async function delEntryAndRec(id){
   const e=M.variableEntries.find(x=>x.id===id);
   if(e)S.recurring=(S.recurring||[]).filter(r=>!(r.categoryId===e.categoryId&&r.description===e.description&&Math.abs(r.amount-e.amount)<0.01));
