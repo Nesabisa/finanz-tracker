@@ -867,16 +867,21 @@ async function addSub(){
   const id=uid();
   const fc=M.fixedCosts.find(f=>f.id===activeFxId);
   const sf=S.fixedCosts.find(f=>f.id===activeFxId);
-  if(fc){fc.subs=fc.subs||[];fc.subs.push({id,name:n,amount:a,checked:false,paidDate:null,accId:''});}
+  if(!fc)return;
+  fc.subs=fc.subs||[];fc.subs.push({id,name:n,amount:a,checked:false,paidDate:null,accId:''});
   if(sf){sf.subs=sf.subs||[];sf.subs.push({id,name:n,def:a,accId:''});}
-  addSugg(n);await Promise.all([save(),saveSett()]);
   document.getElementById('subName').value='';document.getElementById('subAmt').value='';
   showF('fxAddForm',false);renderFxBody();render();
+  addSugg(n);
+  try{await Promise.all([save(),saveSett()]);}
+  catch(e){console.error('addSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function delSub(fid,sid){
   const fc=M.fixedCosts.find(f=>f.id===fid);if(fc)fc.subs=(fc.subs||[]).filter(s=>s.id!==sid);
   const sf=S.fixedCosts.find(f=>f.id===fid);if(sf)sf.subs=(sf.subs||[]).filter(s=>s.id!==sid);
-  await Promise.all([save(),saveSett()]);renderFxBody();render();
+  renderFxBody();render();
+  try{await Promise.all([save(),saveSett()]);}
+  catch(e){console.error('delSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function delFx(id){
   M.fixedCosts=M.fixedCosts.filter(f=>f.id!==id);S.fixedCosts=S.fixedCosts.filter(f=>f.id!==id);
