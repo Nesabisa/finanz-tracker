@@ -29,7 +29,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .page{display:none}.page.active{display:block}
 
 /* HEADER */
-.hdr{background:linear-gradient(135deg,#ffc2d1 0%,#dbbef8 55%,#ffc89a 100%);padding:18px 16px 24px;position:relative;overflow:hidden}
+.hdr{background:linear-gradient(to right,#ffc89a 0%,#ffc2d1 25%,#dbbef8 50%,#ffc2d1 75%,#ffc89a 100%);padding:18px 16px 24px;position:relative;overflow:hidden}
+.hrt{font-size:28px;line-height:1;flex-shrink:0}
 .mnav{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:16px}
 .nbtn{background:rgba(255,255,255,.3);border:none;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
 .nbtn:hover{background:rgba(255,255,255,.5)}
@@ -224,9 +225,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="page active" id="page-budget">
   <div class="hdr">
     <div class="mnav">
+      <span class="hrt">💜</span>
       <button class="nbtn" id="prevBtn">&#8249;</button>
       <span class="mlabel" id="mlabel"></span>
       <button class="nbtn" id="nextBtn">&#8250;</button>
+      <span class="hrt">💜</span>
     </div>
     <div class="sumgrid">
       <div class="scard"><div class="slbl">Einnahmen</div><div class="sval" id="sInc">€0</div></div>
