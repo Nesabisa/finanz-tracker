@@ -593,34 +593,27 @@ function buildFixed(){
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
     let amtHtml=n===0?`<input class="amt-in" type="number" value="${fc.amount||''}" placeholder="0,00" step="0.01">`:
                 `<span class="ramt">${fmt(effAmt(fc))}</span>`;
-    let arrHtml=n>=1?`<span class="arr">›</span>`:'';
+    let arrHtml=`<span class="arr">›</span>`;
     row.innerHTML=`${dotHtml}<span class="ico">${fc.icon||'📌'}</span>
       <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
       ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
 
     const dot=row.querySelector('.sdot');
-    const nameEl=row.querySelector('.edit-name');
     const editIco=row.querySelector('.edit-ico');
-    const arr=row.querySelector('.arr');
 
     // Edit name inline
     editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
 
+    // Dot click: toggle checked state
     if(n===0){
-      // Direct checkbox toggle
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
       row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseFloat(e.target.value)||0);});
-      if(arr)arr.onclick=e=>{e.stopPropagation();openFxSheet(fc.id);};
     } else if(n===1){
-      // Single sub: click row toggles sub directly
       dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
-      row.classList.add('clickable');
-      row.onclick=e=>{if(['sdot','delbtn','amt-in','edit-ico'].some(c=>e.target.classList.contains(c)))return;openFxSheet(fc.id);};
-    } else {
-      // Multiple subs: click row opens sheet
-      row.classList.add('clickable');
-      row.onclick=e=>{if(['delbtn','edit-ico'].some(c=>e.target.classList.contains(c)))return;openFxSheet(fc.id);};
     }
+    // All rows open sheet on click (except dot, delbtn, amt-in, edit-ico)
+    row.classList.add('clickable');
+    row.onclick=e=>{if(['sdot','delbtn','amt-in','edit-ico'].some(c=>e.target.classList.contains(c)))return;openFxSheet(fc.id);};
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
     sec.appendChild(row);
   }
