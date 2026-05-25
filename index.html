@@ -511,7 +511,14 @@ async function loadOrInitMonth(){
   if(snap?.exists()&&(!isFuture||hasRealData)){
     M=snap.data();
     M.extraIncome=M.extraIncome||[];
-    M.fixedCosts=(M.fixedCosts||[]).map(fc=>({...fc,subs:(fc.subs||[])}));
+    M.fixedCosts=(M.fixedCosts||[]).map(fc=>{
+      // Deduplizierung: entfernt versehentlich mehrfach hinzugefügte Unterposten
+      const seen=new Set();
+      return{...fc,subs:(fc.subs||[]).filter(s=>{
+        const k=(s.name||'')+'|'+(s.amount||0);
+        if(seen.has(k))return false;seen.add(k);return true;
+      })};
+    });
     M.variableEntries=M.variableEntries||[];
     // Ensure Sparkasse and Sparen exist as separate items
     for(const def of[DEF_FX[2],DEF_FX[3]]){
@@ -541,7 +548,7 @@ async function loadSavings(){
   else{SAV={deposits:[],withdrawals:[],manualAdditions:[]};await setDoc(savRef(),SAV);}
 }
 
-async function save(){await setDoc(monRef(),M);updateSum();}
+async function save(){await setDoc(monRef(),clone(M));updateSum();}
 async function saveSett(){await setDoc(settRef(),S);}
 async function savSAV(){await setDoc(savRef(),SAV);}
 
