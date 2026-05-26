@@ -285,6 +285,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="sheet">
     <div class="shandle"></div>
     <div class="shd">
+      <button id="fxIconBtn" style="background:none;border:none;font-size:22px;cursor:pointer;padding:0 6px 0 0;line-height:1" title="Icon ändern">🏷️</button>
       <input class="stitle" id="fxTitle" style="border:none;background:transparent;font-size:18px;font-weight:800;color:var(--text);font-family:inherit">
       <span class="stotal" id="fxTotal"></span>
       <button class="xbtn" id="closeFx">&#x2715;</button>
@@ -881,6 +882,7 @@ function openFxSheet(fcId){
   const fc=M.fixedCosts.find(f=>f.id===fcId);if(!fc)return;
   activeFxId=fcId;
   document.getElementById('fxTitle').value=fc.name;
+  document.getElementById('fxIconBtn').textContent=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
   showF('fxAddForm',false);renderFxBody();
   document.getElementById('fxOvl').classList.add('open');
 }
@@ -1007,11 +1009,19 @@ async function renameFx(id,name){
   const sf=S.fixedCosts.find(f=>f.id===id);if(sf)sf.name=name;
   addSugg(name);await Promise.all([save(),saveSett()]);render();
 }
+async function updFxIcon(id,ico){
+  const fc=M.fixedCosts.find(f=>f.id===id);if(fc)fc.icon=ico;
+  const sf=S.fixedCosts.find(f=>f.id===id);if(sf)sf.icon=ico;
+  document.getElementById('fxIconBtn').textContent=ico;
+  render();
+  try{await Promise.all([save(),saveSett()]);}
+  catch(e){snack('⚠️ Speichern fehlgeschlagen');}
+}
 async function addSub(){
   const n=document.getElementById('subName').value.trim(),a=parseFloat(document.getElementById('subAmt').value)||0;
   if(!n){snack('Bitte Namen eingeben');return;}
   const backup={m:clone(M),sav:null};
-  const isAccFx=activeFxId==='sparen'||activeFxId==='sparkasse';
+  const isAccFx=isSavItem(M.fixedCosts.find(f=>f.id===activeFxId)||{});
   const accId=isAccFx?(document.getElementById('subAccSel').value||''):'';
   const id=uid();
   const fc=M.fixedCosts.find(f=>f.id===activeFxId);
@@ -1255,11 +1265,11 @@ async function buildStats(){
   leg.innerHTML='<span>🟥 Einnahmen</span><span>🟪 Ausgaben</span>';cbody.appendChild(leg);
   chd.onclick=()=>{cbody.classList.toggle('open');chd.querySelector('.exp-ico').classList.toggle('open');};
   cblock.appendChild(chd);cblock.appendChild(cbody);c.appendChild(cblock);
-  // Fixkosten Breakdown (gesamt)
+  // Fixkosten Breakdown (gesamt) — key nur nach Name, damit gleiche Posten aus versch. Monaten zusammengefasst werden
   c.appendChild(buildStatsBlock('📌 Fixkosten (Gesamt)','lav',allMonths,m=>{
     const items={};
     (m.data.fixedCosts||[]).filter(fc=>!isSavItem(fc)).forEach(fc=>{
-      const ico=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
+      const ico=autoIcon(fc.name);
       const a=effAmt(fc);if(a)items[`${ico} ${fc.name}`]=(items[`${ico} ${fc.name}`]||0)+a;
     });
     return items;
@@ -1267,8 +1277,7 @@ async function buildStats(){
   c.appendChild(buildStatsBlock('🌱 Sparen (Gesamt)','sun',allMonths,m=>{
     const items={};
     (m.data.fixedCosts||[]).filter(isSavItem).forEach(fc=>{
-      const ico=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
-      const a=effAmt(fc);if(a)items[`${ico} ${fc.name}`]=(items[`${ico} ${fc.name}`]||0)+a;
+      const a=effAmt(fc);if(a)items[`🌱 Sparen`]=(items[`🌱 Sparen`]||0)+a;
     });
     return items;
   }));
@@ -1566,10 +1575,11 @@ document.getElementById('nextBtn').addEventListener('click',()=>navTo(1));
 document.getElementById('closeFx').onclick=()=>document.getElementById('fxOvl').classList.remove('open');
 document.getElementById('fxOvl').onclick=e=>{if(e.target===document.getElementById('fxOvl'))document.getElementById('fxOvl').classList.remove('open');};
 document.getElementById('fxTitle').addEventListener('change',async e=>{const fc=M.fixedCosts.find(f=>f.id===activeFxId);if(fc){await renameFx(fc.id,e.target.value);}});
+document.getElementById('fxIconBtn').onclick=()=>{const fc=M.fixedCosts.find(f=>f.id===activeFxId);if(!fc)return;const cur=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);const v=prompt('Icon ändern (Emoji eingeben):',cur);if(v&&v.trim())updFxIcon(fc.id,v.trim());};
 document.getElementById('fxAddSubTrig').onclick=()=>{
   const f=document.getElementById('fxAddForm'),showing=f.style.display==='block';
   if(!showing){
-    const isAccFx=activeFxId==='sparen'||activeFxId==='sparkasse';
+    const isAccFx=isSavItem(M.fixedCosts.find(f=>f.id===activeFxId)||{});
     const row=document.getElementById('subAccRow');row.style.display=isAccFx?'':'none';
     if(isAccFx){
       const accs=S.savingsAccounts||[];
