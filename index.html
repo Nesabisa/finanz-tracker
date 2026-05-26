@@ -290,7 +290,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="sbody" id="fxBody"></div>
     <div class="sfoot">
-      <button class="addbtn lav" id="fxAddSubTrig">&#43; Unterposten hinzufügen</button>
+      <div style="display:flex">
+        <button class="addbtn lav" id="fxAddSubTrig" style="flex:1">&#43; Unterposten hinzufügen</button>
+        <button class="addbtn lav" id="saveFxTplBtn" style="width:auto;flex-shrink:0;font-size:13px;padding:10px 14px" title="Als Vorlage speichern">💾 Vorlage</button>
+      </div>
       <div class="sform flav" id="fxAddForm">
         <div class="frow">
           <input class="fi fi-h" id="subName" list="sugg" placeholder="Name (z.B. Katzenkrankenversicherung)">
@@ -466,7 +469,7 @@ let yr=new Date().getFullYear(), mo=new Date().getMonth();
 let S=null, M=null, SAV=null;
 let activeFxId=null, activeCat=null, pendingDel=null, manAccId=null;
 let eFix=false, eEin=false;
-let statsLoaded=false, savLoaded=false, isLoading=false, editingEntryId=null;
+let statsLoaded=false, savLoaded=false, isLoading=false, editingEntryId=null, selectedFxTplId=null;
 
 // ── FIRESTORE
 const pad=n=>String(n).padStart(2,'0');
@@ -483,6 +486,7 @@ async function loadSettings(){
     S.recurring=S.recurring||[];
     S.savingsAccounts=S.savingsAccounts||clone(DEF_ACCS);
     S.suggestions=S.suggestions||[];
+    S.fxTemplates=S.fxTemplates||[];
     // Migration: split combined "Sparkasse / Sparen"
     const combined=S.fixedCosts.find(f=>f.name==='Sparkasse / Sparen'||f.id==='sparkasse_sparen');
     if(combined){
@@ -755,8 +759,31 @@ function buildFixed(){
   const[ab,af]=addBtn('ff','+ Fixe Position hinzufügen','lav','flav');sec.appendChild(ab);
   af.innerHTML=`<div class="frow"><input class="fi fi-h" id="fn" list="sugg" placeholder="Name"><input class="fi" type="number" id="fa" placeholder="€" step="0.01" style="width:80px"></div>
     <div class="frow" style="margin:0"><button class="bsave" id="fs">Hinzufügen</button><button class="bcanc" id="fc2">Abbrechen</button></div>`;
+  // Vorlagen-Chips
+  const tpls=S.fxTemplates||[];
+  if(tpls.length){
+    const tplWrap=mk('div','');
+    tplWrap.style.cssText='padding:8px 0 4px;display:flex;flex-wrap:wrap;gap:6px';
+    const lbl=mk('div','');lbl.style.cssText='width:100%;font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px';
+    lbl.textContent='Aus Vorlage';tplWrap.appendChild(lbl);
+    tpls.forEach(t=>{
+      const chip=mk('div','');
+      chip.style.cssText='display:flex;align-items:center;gap:5px;background:var(--lav-bg);border:1.5px solid var(--border);border-radius:20px;padding:5px 8px 5px 10px;cursor:pointer;font-size:13px;-webkit-user-select:none;user-select:none';
+      chip.innerHTML=`<span>${esc(t.icon||'🏷️')} ${esc(t.name)}</span><button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0 0 0 3px;line-height:1">✕</button>`;
+      chip.querySelector('button').onclick=ev=>{ev.stopPropagation();delFxTemplate(t.id);};
+      chip.onclick=()=>{
+        document.getElementById('fn').value=t.name;
+        document.getElementById('fa').value=t.def||'';
+        selectedFxTplId=t.id;
+        tplWrap.querySelectorAll('div[style*="border-radius:20px"]').forEach(c=>{c.style.borderColor='var(--border)';c.style.background='var(--lav-bg)';});
+        chip.style.borderColor='var(--lav-dk)';chip.style.background='rgba(139,60,200,.12)';
+      };
+      tplWrap.appendChild(chip);
+    });
+    af.insertBefore(tplWrap,af.querySelector('.frow'));
+  }
   sec.appendChild(af);
-  af.querySelector('#fs').onclick=addFx;af.querySelector('#fc2').onclick=()=>showF('ff',false);
+  af.querySelector('#fs').onclick=addFx;af.querySelector('#fc2').onclick=()=>{selectedFxTplId=null;showF('ff',false);};
   return sec;
 }
 
@@ -930,9 +957,28 @@ async function addFx(){
   const n=document.getElementById('fn').value.trim(),a=parseFloat(document.getElementById('fa').value)||0;
   if(!n){snack('Bitte Namen eingeben');return;}
   const id=uid();
-  S.fixedCosts.push({id,name:n,icon:'🏷️',def:a,subs:[]});
-  M.fixedCosts.push({id,name:n,icon:'🏷️',amount:a,checked:false,paidDate:null,subs:[]});
+  const tpl=selectedFxTplId?(S.fxTemplates||[]).find(t=>t.id===selectedFxTplId):null;
+  const ico=tpl?.icon||'🏷️';
+  const sSubs=tpl?tpl.subs.map(si=>({id:uid(),name:si.name,def:si.def||0,accId:si.accId||''})):[];
+  const mSubs=sSubs.map(si=>({id:si.id,name:si.name,amount:si.def||0,checked:false,paidDate:null,accId:si.accId}));
+  S.fixedCosts.push({id,name:n,icon:ico,def:a,subs:sSubs});
+  M.fixedCosts.push({id,name:n,icon:ico,amount:a,checked:false,paidDate:null,subs:mSubs});
+  selectedFxTplId=null;
   addSugg(n);await Promise.all([save(),saveSett()]);showF('ff',false);render();
+}
+async function saveFxTemplate(){
+  const fc=M.fixedCosts.find(f=>f.id===activeFxId);if(!fc)return;
+  S.fxTemplates=S.fxTemplates||[];
+  const tpl={
+    id:uid(),name:fc.name,icon:fc.icon||'🏷️',def:fc.amount||0,
+    subs:(fc.subs||[]).map(si=>({id:uid(),name:si.name,def:si.amount||0,accId:si.accId||''}))
+  };
+  S.fxTemplates.push(tpl);
+  await saveSett();snack('💾 Vorlage gespeichert!');
+}
+async function delFxTemplate(id){
+  S.fxTemplates=(S.fxTemplates||[]).filter(t=>t.id!==id);
+  await saveSett();render();
 }
 
 // Variable section
@@ -1413,6 +1459,7 @@ document.getElementById('fxAddSubTrig').onclick=()=>{
 document.getElementById('subSave').onclick=addSub;
 document.getElementById('subCanc').onclick=()=>showF('fxAddForm',false);
 document.getElementById('snackUndo').onclick=undoLast;
+document.getElementById('saveFxTplBtn').onclick=saveFxTemplate;
 
 // Variable sheet
 document.getElementById('closeVar').onclick=()=>document.getElementById('varOvl').classList.remove('open');
