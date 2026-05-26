@@ -408,7 +408,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getFirestore,doc,getDoc,setDoc}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 const fb=initializeApp({apiKey:"AIzaSyDBeS_N564vAqpdFEuTXtwmRq1NQxJyTGo",authDomain:"ausgaben-ac792.firebaseapp.com",projectId:"ausgaben-ac792",storageBucket:"ausgaben-ac792.firebasestorage.app",messagingSenderId:"1036481285970",appId:"1:1036481285970:web:c442d03361f44a9185348b"},'ft4');
 const db=getFirestore(fb);
 
@@ -466,7 +466,7 @@ let yr=new Date().getFullYear(), mo=new Date().getMonth();
 let S=null, M=null, SAV=null;
 let activeFxId=null, activeCat=null, pendingDel=null, manAccId=null;
 let eFix=false, eEin=false;
-let statsLoaded=false, savLoaded=false, isLoading=false;
+let statsLoaded=false, savLoaded=false, isLoading=false, editingEntryId=null;
 
 // ── FIRESTORE
 const pad=n=>String(n).padStart(2,'0');
@@ -1007,7 +1007,10 @@ function renderVarBody(){
     const r=mk('div','erow');
     r.innerHTML=`<span class="edate">${fmtD(e.date)}</span><span class="edesc">${esc(e.description)||'—'}</span>
       ${e.isEin?'<span class="bdg bdg-ein">💫 Einmalig</span>':''}${e.isFix?'<span class="bdg bdg-fix">🔄 Fix</span>':''}
-      <span class="eamt${e.isEin?' ein':''}">${fmt(e.amount)}</span><button class="delbtn">✕</button>`;
+      <span class="eamt${e.isEin?' ein':''}">${fmt(e.amount)}</span>
+      <button style="background:none;border:none;font-size:13px;cursor:pointer;padding:0 3px;opacity:.35;flex-shrink:0" title="Bearbeiten">✏️</button>
+      <button class="delbtn">✕</button>`;
+    r.querySelectorAll('button')[0].onclick=ev=>{ev.stopPropagation();editEntry(e.id);};
     r.querySelector('.delbtn').onclick=()=>{
       if(e.isFix){pendingDel={id:e.id};document.getElementById('delOvl').classList.add('open');}
       else delEntry(e.id);
@@ -1016,14 +1019,36 @@ function renderVarBody(){
   }
 }
 function updChips(){document.getElementById('chipFix').className='chip'+(eFix?' on-fix':'');document.getElementById('chipEin').className='chip'+(eEin?' on-ein':'');}
+function editEntry(id){
+  const e=M.variableEntries.find(x=>x.id===id);if(!e)return;
+  editingEntryId=id;
+  document.getElementById('eAmt').value=e.amount||'';
+  document.getElementById('eDesc').value=e.description||'';
+  document.getElementById('eDate').value=e.date||today();
+  eFix=!!e.isFix;eEin=!!e.isEin;updChips();
+  document.getElementById('saveEntry').textContent='Ändern';
+  document.getElementById('varAddTrig').textContent='✏️ Eintrag bearbeiten';
+  showF('varForm',true);document.getElementById('eAmt').focus();
+}
+function resetVarForm(){
+  editingEntryId=null;
+  document.getElementById('saveEntry').textContent='Speichern';
+  document.getElementById('varAddTrig').textContent='+ Eintrag hinzufügen';
+  document.getElementById('eAmt').value='';document.getElementById('eDesc').value='';document.getElementById('eDate').value=today();
+  eFix=eEin=false;updChips();showF('varForm',false);
+}
 async function saveEntry(){
   const a=parseFloat(document.getElementById('eAmt').value),dt=document.getElementById('eDate').value||today(),d=document.getElementById('eDesc').value.trim();
   if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
-  M.variableEntries.push({id:uid(),categoryId:activeCat.id,amount:a,date:dt,description:d,isFix:eFix,isEin:eEin});
-  if(eFix){S.recurring=S.recurring||[];S.recurring.push({id:uid(),categoryId:activeCat.id,amount:a,description:d,isFix:true,isEin:false});await saveSett();}
+  if(editingEntryId){
+    const e=M.variableEntries.find(x=>x.id===editingEntryId);
+    if(e){e.amount=a;e.date=dt;e.description=d;e.isFix=eFix;e.isEin=eEin;}
+  } else {
+    M.variableEntries.push({id:uid(),categoryId:activeCat.id,amount:a,date:dt,description:d,isFix:eFix,isEin:eEin});
+    if(eFix){S.recurring=S.recurring||[];S.recurring.push({id:uid(),categoryId:activeCat.id,amount:a,description:d,isFix:true,isEin:false});await saveSett();}
+  }
   addSugg(d);await save();
-  document.getElementById('eAmt').value='';document.getElementById('eDesc').value='';document.getElementById('eDate').value=today();
-  eFix=eEin=false;updChips();showF('varForm',false);renderVarBody();render();
+  resetVarForm();renderVarBody();render();
 }
 async function delEntry(id){M.variableEntries=M.variableEntries.filter(e=>e.id!==id);await save();renderVarBody();render();}
 async function delEntryAndRec(id){
@@ -1034,40 +1059,76 @@ async function delEntryAndRec(id){
 
 // ── STATS PAGE
 async function buildStats(){
-  const c=document.getElementById('statsContent');c.innerHTML='<div class="loading">Lade...</div>';
-  const months=[];
-  for(let i=5;i>=0;i--){let my=yr,mm=mo-i;if(mm<0){mm+=12;my--;}
-    try{const s=await getDoc(doc(db,'personal_months',`${my}-${pad(mm+1)}`));if(s.exists())months.push({key:`${my}-${pad(mm+1)}`,yr:my,mo:mm,data:s.data()});}catch(e){}}
+  const c=document.getElementById('statsContent');c.innerHTML='<div class="loading">Lade... 🌸</div>';
+  // Alle Monate aus Firebase laden
+  let allMonths=[];
+  try{
+    const snap=await getDocs(collection(db,'personal_months'));
+    snap.forEach(d=>{
+      const data=d.data();
+      if(!data.salary&&!data.variableEntries?.length&&!data.extraIncome?.length)return;
+      const[y,mm]=d.id.split('-').map(Number);
+      allMonths.push({key:d.id,yr:y,mo:mm-1,data});
+    });
+    allMonths.sort((a,b)=>a.key.localeCompare(b.key));
+  }catch(e){console.error('stats:',e);}
   c.innerHTML='';
-  // Month chart
+  if(!allMonths.length){c.innerHTML='<div class="empty-hint">Noch keine Daten</div>';return;}
+  const calcInc=m=>(m.data.salary||0)+(m.data.extraIncome||[]).reduce((s,e)=>s+(e.amount||0),0);
+  const calcExp=m=>(m.data.fixedCosts||[]).reduce((s,fc)=>fc.subs?.length?s+fc.subs.filter(si=>si.checked).reduce((a,si)=>a+(si.amount||0),0):s+(fc.checked?fc.amount||0:0),0)+(m.data.variableEntries||[]).reduce((s,e)=>s+(e.amount||0),0);
+  // Gesamtübersicht Karte
+  const totalInc=allMonths.reduce((s,m)=>s+calcInc(m),0);
+  const totalExp=allMonths.reduce((s,m)=>s+calcExp(m),0);
+  const totalSav=totalInc-totalExp,n=allMonths.length;
+  const sumCard=mk('div','card');
+  sumCard.innerHTML=`<div class="card-hd"><span class="ctitle">✨ Gesamtübersicht · ${n} Monate</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px">
+      <div style="background:var(--lav-bg);border-radius:12px;padding:12px">
+        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Einnahmen</div>
+        <div style="font-size:17px;font-weight:800">${fmt(totalInc)}</div>
+        <div style="font-size:11px;color:var(--muted)">⌀ ${fmt(totalInc/n)}/Mon.</div>
+      </div>
+      <div style="background:var(--peach-bg);border-radius:12px;padding:12px">
+        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Ausgaben</div>
+        <div style="font-size:17px;font-weight:800">${fmt(totalExp)}</div>
+        <div style="font-size:11px;color:var(--muted)">⌀ ${fmt(totalExp/n)}/Mon.</div>
+      </div>
+      <div style="background:${totalSav>=0?'rgba(80,200,120,.12)':'rgba(220,80,80,.1)'};border-radius:12px;padding:12px;grid-column:1/-1">
+        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Gesamt übrig geblieben</div>
+        <div style="font-size:20px;font-weight:800;color:${totalSav>=0?'var(--pos)':'var(--neg)'}">${fmt(totalSav)}</div>
+        <div style="font-size:11px;color:var(--muted)">⌀ ${fmt(totalSav/n)}/Mon.</div>
+      </div>
+    </div>`;
+  c.appendChild(sumCard);
+  // Alle-Monate Chart
   const cblock=mk('div','expand-block');
-  const chd=mk('div','exp-hd');chd.innerHTML=`<span class="exp-title">📅 Übersicht (6 Monate)</span><span class="exp-ico open">›</span>`;
+  const chd=mk('div','exp-hd');chd.innerHTML=`<span class="exp-title">📅 Alle Monate (${n})</span><span class="exp-ico open">›</span>`;
   const cbody=mk('div','exp-body open');
-  const maxV=Math.max(...months.map(m=>(m.data.salary||0)+(m.data.extraIncome||[]).reduce((s,e)=>s+(e.amount||0),0)),1);
-  months.forEach(m=>{
-    const inc=(m.data.salary||0)+(m.data.extraIncome||[]).reduce((s,e)=>s+(e.amount||0),0);
-    const exp=(m.data.fixedCosts||[]).reduce((s,fc)=>fc.subs&&fc.subs.length?s+fc.subs.filter(si=>si.checked).reduce((a,si)=>a+(si.amount||0),0):s+(fc.checked?fc.amount||0:0),0)+(m.data.variableEntries||[]).reduce((s,e)=>s+(e.amount||0),0);
+  const maxV=Math.max(...allMonths.map(m=>calcInc(m)),1);
+  allMonths.forEach(m=>{
+    const inc=calcInc(m),exp=calcExp(m);
     const r=mk('div','bar-row');
-    r.innerHTML=`<span class="bar-lbl">${MN[m.mo].slice(0,3)} ${m.yr}</span>
+    r.innerHTML=`<span class="bar-lbl" style="width:52px;font-size:11px">${MN[m.mo].slice(0,3)} ${String(m.yr).slice(2)}</span>
       <div style="flex:1;display:flex;flex-direction:column;gap:3px">
-        <div style="display:flex;align-items:center;gap:6px"><div class="bar-bg" style="height:8px"><div class="bar-fill rose" style="width:${Math.round(inc/maxV*100)}%"></div></div><span style="font-size:11px;color:var(--muted);width:60px;text-align:right">${fmt(inc)}</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div class="bar-bg" style="height:8px"><div class="bar-fill lav" style="width:${Math.round(exp/maxV*100)}%"></div></div><span style="font-size:11px;color:var(--muted);width:60px;text-align:right">${fmt(exp)}</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="bar-bg" style="height:7px"><div class="bar-fill rose" style="width:${Math.round(inc/maxV*100)}%"></div></div><span style="font-size:10px;color:var(--muted);width:60px;text-align:right">${fmt(inc)}</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="bar-bg" style="height:7px"><div class="bar-fill lav" style="width:${Math.round(exp/maxV*100)}%"></div></div><span style="font-size:10px;color:var(--muted);width:60px;text-align:right">${fmt(exp)}</span></div>
       </div>`;
     cbody.appendChild(r);
   });
-  cbody.innerHTML+=`<div style="display:flex;gap:16px;padding:8px 16px;font-size:12px;color:var(--sub)"><span>🟥 Einnahmen</span><span>🟪 Ausgaben</span></div>`;
+  const leg=mk('div','');leg.style.cssText='display:flex;gap:16px;padding:4px 16px 8px;font-size:12px;color:var(--sub)';
+  leg.innerHTML='<span>🟥 Einnahmen</span><span>🟪 Ausgaben</span>';cbody.appendChild(leg);
   chd.onclick=()=>{cbody.classList.toggle('open');chd.querySelector('.exp-ico').classList.toggle('open');};
   cblock.appendChild(chd);cblock.appendChild(cbody);c.appendChild(cblock);
-  // Fixed breakdown
-  c.appendChild(buildStatsBlock('📌 Fixkosten (Gesamt)','lav',months,m=>{
+  // Fixkosten Breakdown (gesamt)
+  c.appendChild(buildStatsBlock('📌 Fixkosten (Gesamt)','lav',allMonths,m=>{
     const items={};
     (m.data.fixedCosts||[]).forEach(fc=>{const a=effAmt(fc);if(a)items[`${fc.icon||''} ${fc.name}`]=(items[`${fc.icon||''} ${fc.name}`]||0)+a;});
     return items;
   }));
-  // Variable breakdown
-  c.appendChild(buildStatsBlock('💳 Variable Ausgaben (Gesamt)','peach',months,m=>{
+  // Variable Breakdown (gesamt)
+  c.appendChild(buildStatsBlock('💳 Variable Ausgaben (Gesamt)','peach',allMonths,m=>{
     const items={};
-    (m.data.variableEntries||[]).forEach(e=>{const cat=S.categories.find(c=>c.id===e.categoryId);const n=cat?`${cat.icon||''} ${cat.name}`:e.categoryId;items[n]=(items[n]||0)+(e.amount||0);});
+    (m.data.variableEntries||[]).forEach(e=>{const cat=S.categories.find(c=>c.id===e.categoryId);const nm=cat?`${cat.icon||''} ${cat.name}`:e.categoryId;items[nm]=(items[nm]||0)+(e.amount||0);});
     return items;
   }));
 }
@@ -1358,7 +1419,7 @@ document.getElementById('closeVar').onclick=()=>document.getElementById('varOvl'
 document.getElementById('varOvl').onclick=e=>{if(e.target===document.getElementById('varOvl'))document.getElementById('varOvl').classList.remove('open');};
 document.getElementById('varTitle').addEventListener('change',async e=>{if(activeCat){await renameCat(activeCat.id,e.target.value.replace(/^[^\w]+/,'').trim());}});
 document.getElementById('varAddTrig').onclick=()=>{const f=document.getElementById('varForm');showF('varForm',f.style.display!=='block');if(f.style.display==='block')document.getElementById('eAmt').focus();};
-document.getElementById('saveEntry').onclick=saveEntry;document.getElementById('cancEntry').onclick=()=>showF('varForm',false);
+document.getElementById('saveEntry').onclick=saveEntry;document.getElementById('cancEntry').onclick=resetVarForm;
 document.getElementById('eDesc').addEventListener('keydown',e=>{if(e.key==='Enter')saveEntry();});
 document.getElementById('chipFix').onclick=()=>{eFix=!eFix;if(eFix)eEin=false;updChips();};
 document.getElementById('chipEin').onclick=()=>{eEin=!eEin;if(eEin)eFix=false;updChips();};
