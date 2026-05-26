@@ -198,6 +198,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .bar-fill.rose{background:linear-gradient(90deg,var(--rose),var(--rose-dk))}
 .bar-fill.lav{background:linear-gradient(90deg,var(--lav),var(--lav-dk))}
 .bar-fill.peach{background:linear-gradient(90deg,var(--peach),var(--peach-dk))}
+.bar-fill.sun{background:linear-gradient(90deg,var(--sun),var(--sun-dk))}
 .bar-val{font-size:13px;font-weight:700;width:72px;text-align:right;flex-shrink:0}
 
 /* SAVINGS */
@@ -253,7 +254,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="sumgrid">
       <div class="scard"><div class="slbl">Einnahmen</div><div class="sval" id="sInc">€0</div></div>
-      <div class="scard"><div class="slbl">Ausgaben</div><div class="sval" id="sExp">€0</div></div>
+      <div class="scard"><div class="slbl">Ausgaben</div><div class="sval" id="sExp">€0</div><div style="font-size:11px;color:var(--sub);margin-top:2px" id="sSavLbl"></div></div>
       <div class="scard"><div class="slbl">Übrig</div><div class="sval" id="sBal">€0</div></div>
     </div>
   </div>
@@ -604,15 +605,46 @@ function checkedSt(fc){
   return n===0?'empty':n===fc.subs.length?'done':'partial';
 }
 function catTotal(id){return(M.variableEntries||[]).filter(e=>e.categoryId===id).reduce((s,e)=>s+(e.amount||0),0);}
+function isSavItem(fc){const nm=(fc.name||'').toLowerCase().trim();return fc.id==='sparen'||nm==='sparen';}
+function autoIcon(name){
+  const n=(name||'').toLowerCase();
+  if(n.includes('miete')||n.includes('warmmiete')||n.includes('wohnung'))return'🏠';
+  if(n.includes('strom')||n.includes('energie')||n.includes('gas'))return'⚡';
+  if(n.includes('internet')||n.includes('wlan')||n.includes('wifi')||n.includes('telekom')||n.includes('vodafone'))return'📡';
+  if(n.includes('versicherung'))return'🛡️';
+  if(n.includes('essen')||n.includes('lebensmittel')||n.includes('supermarkt')||n.includes('food'))return'🛒';
+  if(n.includes('handy')||n.includes('telefon')||n.includes('phone')||n.includes('mobilfunk'))return'📱';
+  if(n.includes('netflix')||n.includes('spotify')||n.includes('prime')||n.includes('disney')||n.includes('youtube'))return'🎬';
+  if(n.includes('abo')||n.includes('abonnement'))return'🔖';
+  if(n.includes('gym')||n.includes('sport')||n.includes('fitness')||n.includes('urban'))return'💪';
+  if(n.includes('auto')||n.includes('tanken')||n.includes('kfz')||n.includes('fahrzeug')||n.includes('pkw'))return'🚗';
+  if(n.includes('öpnv')||n.includes('bahn')||n.includes('ticket')||n.includes('bus')||n.includes('mvg'))return'🚌';
+  if(n.includes('kredit')||n.includes('raten')||n.includes('darlehen'))return'💳';
+  if(n.includes('sparen')||n.includes('savings'))return'🌱';
+  if(n.includes('sparkasse')||n.includes('bank'))return'🏦';
+  if(n.includes('gez')||n.includes('rundfunk')||n.includes('ard')||n.includes('zdf'))return'📺';
+  if(n.includes('müll')||n.includes('abfall')||n.includes('entsorgung'))return'🗑️';
+  if(n.includes('wasser'))return'💧';
+  if(n.includes('arzt')||n.includes('zahnarzt')||n.includes('gesundheit')||n.includes('apotheke'))return'🏥';
+  if(n.includes('kranken'))return'🏥';
+  if(n.includes('haushalt')||n.includes('reinigung'))return'🏡';
+  if(n.includes('bildung')||n.includes('schule')||n.includes('kurs')||n.includes('uni'))return'📚';
+  if(n.includes('miguel')||n.includes('pedro'))return'👫';
+  return'🏷️';
+}
 function totalInc(){return(M.salary||0)+(M.extraIncome||[]).reduce((s,e)=>s+(e.amount||0),0);}
+function totalSav(){
+  return(M.fixedCosts||[]).filter(isSavItem).reduce((s,fc)=>fc.subs&&fc.subs.length?s+fc.subs.filter(si=>si.checked).reduce((a,si)=>a+(si.amount||0),0):s+(fc.checked?fc.amount||0:0),0);
+}
 function totalExp(){
   const f=(M.fixedCosts||[]).reduce((s,fc)=>fc.subs&&fc.subs.length?s+fc.subs.filter(si=>si.checked).reduce((a,si)=>a+(si.amount||0),0):s+(fc.checked?fc.amount||0:0),0);
   return f+(M.variableEntries||[]).reduce((s,e)=>s+(e.amount||0),0);
 }
 function updateSum(){
-  const i=totalInc(),e=totalExp(),b=i-e;
+  const i=totalInc(),e=totalExp(),sav=totalSav(),b=i-e;
   document.getElementById('sInc').textContent=fmt(i);
   document.getElementById('sExp').textContent=fmt(e);
+  const sl=document.getElementById('sSavLbl');if(sl)sl.textContent=sav>0?`davon Sparen ${fmt(sav)}`:'';
   const el=document.getElementById('sBal');el.textContent=fmt(b);el.className='sval '+(b>=0?'pos':'neg');
 }
 
@@ -672,7 +704,7 @@ function render(){
     if(h){h.textContent=hEmoji;h.onclick=changeNavEmoji;}
   });
   const c=document.getElementById('content');c.innerHTML='';
-  c.appendChild(buildIncome());c.appendChild(buildFixed());c.appendChild(buildVariable());c.appendChild(buildBackup());
+  c.appendChild(buildIncome());c.appendChild(buildFixed());c.appendChild(buildSparen());c.appendChild(buildVariable());c.appendChild(buildBackup());
 }
 async function changeNavEmoji(){
   const v=prompt('Emoji für diesen Monat (z.B. 🩷 ✨ 🌸 🦋):',M.navEmoji||'💜');
@@ -713,13 +745,14 @@ async function delExtra(id){M.extraIncome=M.extraIncome.filter(e=>e.id!==id);awa
 // Fixed section
 function buildFixed(){
   const sec=mk('div','card');
-  const tot=(M.fixedCosts||[]).reduce((s,fc)=>s+effAmt(fc),0);
+  const fixItems=(M.fixedCosts||[]).filter(fc=>!isSavItem(fc));
+  const tot=fixItems.reduce((s,fc)=>s+effAmt(fc),0);
   const hd=mk('div','card-hd fix');hd.innerHTML=`<span class="ctitle">🏷️ Fixe Ausgaben</span><span class="ctotal">${fmt(tot)}</span>`;
   sec.appendChild(hd);
-  for(const fc of(M.fixedCosts||[])){
+  for(const fc of fixItems){
     const st=checkedSt(fc);
     const n=fc.subs?fc.subs.length:0;
-    const displayIcon='🏷️';
+    const displayIcon=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
     const row=mk('div',`fx-row row ${st}`);
     let dotHtml=`<div class="sdot ${st}">${st==='done'?'✓':st==='partial'?'~':''}</div>`;
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
@@ -752,8 +785,15 @@ function buildFixed(){
     sec.appendChild(row);
   }
   enableDragSort(sec,'.fx-row',(from,to)=>{
-    const[mx]=M.fixedCosts.splice(from,1);M.fixedCosts.splice(to,0,mx);
-    const[sx]=S.fixedCosts.splice(from,1);S.fixedCosts.splice(to,0,sx);
+    // drag-sort only operates on non-savings items; remap indices into full M.fixedCosts
+    const savItems=(M.fixedCosts||[]).filter(isSavItem);
+    const nonSav=(M.fixedCosts||[]).filter(fc=>!isSavItem(fc));
+    const[mx]=nonSav.splice(from,1);nonSav.splice(to,0,mx);
+    M.fixedCosts=[...nonSav,...savItems];
+    const sSav=(S.fixedCosts||[]).filter(isSavItem);
+    const sNonSav=(S.fixedCosts||[]).filter(fc=>!isSavItem(fc));
+    const[sx]=sNonSav.splice(from,1);sNonSav.splice(to,0,sx);
+    S.fixedCosts=[...sNonSav,...sSav];
     render();Promise.all([save(),saveSett()]);
   });
   const[ab,af]=addBtn('ff','+ Fixe Position hinzufügen','lav','flav');sec.appendChild(ab);
@@ -784,6 +824,56 @@ function buildFixed(){
   }
   sec.appendChild(af);
   af.querySelector('#fs').onclick=addFx;af.querySelector('#fc2').onclick=()=>{selectedFxTplId=null;showF('ff',false);};
+  return sec;
+}
+
+function buildSparen(){
+  const sec=mk('div','card');
+  const savItems=(M.fixedCosts||[]).filter(isSavItem);
+  const tot=savItems.reduce((s,fc)=>s+effAmt(fc),0);
+  const hd=mk('div','card-hd sav');hd.innerHTML=`<span class="ctitle">🌱 Sparen</span><span class="ctotal">${fmt(tot)}</span>`;
+  sec.appendChild(hd);
+  for(const fc of savItems){
+    const st=checkedSt(fc);
+    const n=fc.subs?fc.subs.length:0;
+    const row=mk('div',`fx-row row ${st}`);
+    let dotHtml=`<div class="sdot ${st}">${st==='done'?'✓':st==='partial'?'~':''}</div>`;
+    let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
+    let amtHtml=n===0?`<input class="amt-in" type="number" value="${fc.amount||''}" placeholder="0,00" step="0.01">`:
+                `<span class="ramt">${fmt(effAmt(fc))}</span>`;
+    let arrHtml=`<span class="arr">›</span>`;
+    const savIcon=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
+    row.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span>${dotHtml}<span class="ico">${savIcon}</span>
+      <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
+      ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
+    const dot=row.querySelector('.sdot');
+    const editIco=row.querySelector('.edit-ico');
+    editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
+    if(n===0){
+      dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
+      row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseFloat(e.target.value)||0);});
+    } else if(n===1){
+      dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
+    } else {
+      dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
+    }
+    row.classList.add('clickable');
+    row.onclick=e=>{if(['sdot','delbtn','amt-in','edit-ico','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;openFxSheet(fc.id);};
+    row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
+    sec.appendChild(row);
+  }
+  enableDragSort(sec,'.fx-row',(from,to)=>{
+    // drag-sort within savings items only
+    const nonSav=(M.fixedCosts||[]).filter(fc=>!isSavItem(fc));
+    const savArr=(M.fixedCosts||[]).filter(isSavItem);
+    const[mx]=savArr.splice(from,1);savArr.splice(to,0,mx);
+    M.fixedCosts=[...nonSav,...savArr];
+    const sNonSav=(S.fixedCosts||[]).filter(fc=>!isSavItem(fc));
+    const sSavArr=(S.fixedCosts||[]).filter(isSavItem);
+    const[sx]=sSavArr.splice(from,1);sSavArr.splice(to,0,sx);
+    S.fixedCosts=[...sNonSav,...sSavArr];
+    render();Promise.all([save(),saveSett()]);
+  });
   return sec;
 }
 
@@ -1168,7 +1258,18 @@ async function buildStats(){
   // Fixkosten Breakdown (gesamt)
   c.appendChild(buildStatsBlock('📌 Fixkosten (Gesamt)','lav',allMonths,m=>{
     const items={};
-    (m.data.fixedCosts||[]).forEach(fc=>{const a=effAmt(fc);if(a)items[`${fc.icon||''} ${fc.name}`]=(items[`${fc.icon||''} ${fc.name}`]||0)+a;});
+    (m.data.fixedCosts||[]).filter(fc=>!isSavItem(fc)).forEach(fc=>{
+      const ico=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
+      const a=effAmt(fc);if(a)items[`${ico} ${fc.name}`]=(items[`${ico} ${fc.name}`]||0)+a;
+    });
+    return items;
+  }));
+  c.appendChild(buildStatsBlock('🌱 Sparen (Gesamt)','sun',allMonths,m=>{
+    const items={};
+    (m.data.fixedCosts||[]).filter(isSavItem).forEach(fc=>{
+      const ico=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
+      const a=effAmt(fc);if(a)items[`${ico} ${fc.name}`]=(items[`${ico} ${fc.name}`]||0)+a;
+    });
     return items;
   }));
   // Variable Breakdown (gesamt)
@@ -1243,17 +1344,40 @@ async function buildSavingsPage(){
   accCard.appendChild(af);af.querySelector('#accS').onclick=addSavAcc;af.querySelector('#accC').onclick=()=>showF('acf',false);
   c.appendChild(accCard);
 
-  // Sonderausgaben
-  const sonds=(SAV.withdrawals||[]).sort((a,b)=>(b.date||'')<(a.date||'')?-1:1);
+  // Sonderausgaben – nach Monaten gruppiert, ab April 2026
+  const APP_START='2026-04';
+  const allSonds=(SAV.withdrawals||[]).filter(w=>(w.date||'').substring(0,7)>=APP_START).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const sCard=mk('div','card');
-  sCard.innerHTML=`<div class="card-hd sond"><span class="ctitle">💸 Sonderausgaben</span><span class="ctotal" style="color:var(--coral-dk)">${fmt(sonds.reduce((s,w)=>s+(w.amount||0),0))}</span></div>`;
-  if(!sonds.length)sCard.innerHTML+=`<div class="empty-hint">Noch keine Sonderausgaben</div>`;
-  sonds.forEach(w=>{
-    const acc=accs.find(a=>a.id===w.accountId);
-    const r=mk('div','sond-row');
-    r.innerHTML=`<span class="sond-date">${fmtD(w.date)}</span><span class="sond-acc">${esc(acc?.name||'?')}</span><span class="sond-desc">${esc(w.description)||'—'}</span><span class="sond-amt">-${fmt(w.amount)}</span><button class="delbtn">✕</button>`;
-    r.querySelector('.delbtn').onclick=()=>delSond(w.id);sCard.appendChild(r);
-  });
+  const sondTotal=allSonds.reduce((s,w)=>s+(w.amount||0),0);
+  sCard.innerHTML=`<div class="card-hd sond"><span class="ctitle">💸 Sonderausgaben</span><span class="ctotal" style="color:var(--coral-dk)">${fmt(sondTotal)}</span></div>`;
+  if(!allSonds.length){sCard.innerHTML+=`<div class="empty-hint">Noch keine Sonderausgaben</div>`;}
+  else{
+    // Group by month
+    const byMonth={};
+    allSonds.forEach(w=>{const mk2=(w.date||'').substring(0,7);if(!byMonth[mk2])byMonth[mk2]=[];byMonth[mk2].push(w);});
+    const curKey=`${yr}-${pad(mo+1)}`;
+    Object.keys(byMonth).sort().reverse().forEach(mKey=>{
+      const[ky,km]=mKey.split('-').map(Number);
+      const mTotal=byMonth[mKey].reduce((s,w)=>s+(w.amount||0),0);
+      const mLabel=`${MN[km-1]} ${ky}`;
+      const isOpen=mKey===curKey;
+      const grp=mk('div','');grp.style.cssText='border-bottom:1px solid var(--border)';
+      const ghd=mk('div','');
+      ghd.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;gap:8px;background:var(--rose-bg)';
+      const arr=mk('span','');arr.style.cssText='font-size:16px;transition:transform .2s;color:var(--sub)';arr.textContent='›';if(isOpen)arr.style.transform='rotate(90deg)';
+      ghd.innerHTML=`<span style="font-weight:700;font-size:13px">${mLabel}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--coral-dk);font-weight:700">-${fmt(mTotal)}</span></div>`;
+      ghd.appendChild(arr);
+      const gbody=mk('div','');if(!isOpen)gbody.style.display='none';
+      byMonth[mKey].forEach(w=>{
+        const acc=accs.find(a=>a.id===w.accountId);
+        const r=mk('div','sond-row');
+        r.innerHTML=`<span class="sond-date">${fmtD(w.date)}</span><span class="sond-acc">${esc(acc?.name||'?')}</span><span class="sond-desc">${esc(w.description)||'—'}</span><span class="sond-amt">-${fmt(w.amount)}</span><button class="delbtn">✕</button>`;
+        r.querySelector('.delbtn').onclick=()=>delSond(w.id);gbody.appendChild(r);
+      });
+      ghd.onclick=()=>{const open=gbody.style.display!=='none';gbody.style.display=open?'none':'block';arr.style.transform=open?'':'rotate(90deg)';};
+      grp.appendChild(ghd);grp.appendChild(gbody);sCard.appendChild(grp);
+    });
+  }
   const addSondBtnEl=mk('button','addbtn coral');addSondBtnEl.textContent='+ Sonderausgabe eintragen';
   addSondBtnEl.onclick=()=>{
     // Populate account selector
@@ -1268,7 +1392,8 @@ function buildSavingsChart(accs,colors){
   if(!SAV)return'';
   const now=new Date();
   const monthKeys=[];
-  for(let i=11;i>=0;i--){let y=now.getFullYear(),m=now.getMonth()-i;while(m<0){m+=12;y--;}monthKeys.push(`${y}-${pad(m+1)}`);}
+  // Start from April 2026 (app start month)
+  {let y=2026,m=3;while(y<now.getFullYear()||(y===now.getFullYear()&&m<=now.getMonth())){monthKeys.push(`${y}-${pad(m+1)}`);m++;if(m>11){m=0;y++;}}if(!monthKeys.length)monthKeys.push(`${now.getFullYear()}-${pad(now.getMonth()+1)}`);}
 
   // Calculate running balance per account per month
   const balByAcc={};
