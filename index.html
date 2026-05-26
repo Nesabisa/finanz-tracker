@@ -1101,16 +1101,11 @@ function buildVariable(){
     const[cx]=S.categories.splice(from,1);S.categories.splice(to,0,cx);
     render();saveSett();
   });
-  // Orphaned entries (Kategorie gelöscht, Betrag noch vorhanden)
-  const knownCatIds=new Set((S.categories||[]).map(c=>c.id));
-  const orphaned=(M.variableEntries||[]).filter(en=>!knownCatIds.has(en.categoryId));
-  if(orphaned.length>0){
-    const orphanTotal=orphaned.reduce((s,en)=>s+(en.amount||0),0);
-    const ro=mk('div','row');ro.style.cssText='background:rgba(220,80,80,.07);border-radius:10px;margin-top:4px;cursor:default';
-    ro.innerHTML=`<span class="ico">🗑️</span><div class="name-wrap"><span class="edit-name" style="color:var(--muted);font-size:13px">Gelöschte Kategorien</span></div><span class="ramt" style="color:var(--coral-dk)">${fmt(orphanTotal)}</span><button class="delbtn" style="font-size:11px;padding:2px 7px" title="Bereinigen">löschen</button>`;
-    ro.querySelector('.delbtn').onclick=async ev=>{ev.stopPropagation();M.variableEntries=(M.variableEntries||[]).filter(en=>knownCatIds.has(en.categoryId));render();try{await save();}catch(err){console.error(err);snack('⚠️ Speichern fehlgeschlagen');}};
-    sec.appendChild(ro);
-  }
+  // Orphaned entries automatisch löschen (unsichtbar, kein UI-Row)
+  {const knownCatIds=new Set((S.categories||[]).map(c=>c.id));
+  const before=M.variableEntries?.length||0;
+  M.variableEntries=(M.variableEntries||[]).filter(en=>knownCatIds.has(en.categoryId));
+  if((M.variableEntries?.length||0)<before)save().catch(()=>{});}
   const[ab,af]=addBtn('cf','+ Neue Kategorie','peach','fpeach');sec.appendChild(ab);
   af.innerHTML=`<div class="frow"><input class="fi" id="ci" placeholder="🌟" style="width:52px;text-align:center;font-size:20px"><input class="fi fi-h" id="cn" list="sugg" placeholder="Kategoriename"><button class="bsave" id="cs">OK</button><button class="bcanc" id="cc">✕</button></div>`;
   sec.appendChild(af);
