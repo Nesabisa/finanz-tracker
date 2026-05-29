@@ -238,6 +238,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ICON EDITABLE */
 .ico-btn{cursor:pointer;transition:transform .15s}
 .ico-btn:hover{transform:scale(1.25)}
+
+/* FOOD PAGE */
+.food-hdr{background:linear-gradient(135deg,#ffd6a5 0%,#ffb3c1 100%);padding:18px 16px 20px}
+.fbcard{background:rgba(255,255,255,.38);border-radius:16px;padding:14px 16px;backdrop-filter:blur(4px);margin-top:4px}
+.fblbl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;color:var(--sub);opacity:.85;margin-bottom:2px}
+.fbval{font-size:21px;font-weight:800}
+.food-prog{height:7px;background:rgba(0,0,0,.12);border-radius:4px;overflow:hidden;margin:10px 0 5px}
+.food-prog-fill{height:100%;border-radius:4px;transition:width .5s}
+.food-status{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:4px 11px;font-size:11px;font-weight:700}
+.food-status.green{background:rgba(40,180,100,.2);color:#1a6040}
+.food-status.yellow{background:rgba(220,160,0,.2);color:#8a5800}
+.food-status.red{background:rgba(220,60,60,.2);color:var(--coral-dk)}
+.food-filter{display:flex;gap:6px;padding:10px 14px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.food-fbtn{background:var(--border);border:1.5px solid transparent;border-radius:20px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--sub);-webkit-user-select:none;user-select:none}
+.food-fbtn.on{background:var(--coral-bg);color:var(--coral-dk);border-color:var(--coral-dk)}
+.food-entry{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);gap:8px;cursor:pointer}
+.food-entry:last-child{border-bottom:none}
+.food-entry:active{background:var(--coral-bg)}
+.food-tag{font-size:10px;font-weight:700;border-radius:8px;padding:2px 7px;flex-shrink:0;white-space:nowrap}
+.food-tag.aus{background:var(--peach-bg);color:var(--peach-dk)}
+.food-tag.best{background:var(--lav-bg);color:var(--lav-dk)}
+.food-tag.pay{background:var(--rose-bg);color:var(--rose-dk)}
+.ftoggle-row{display:flex;gap:6px;flex-wrap:wrap}
+.ftoggle{background:var(--border);border:1.5px solid transparent;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--sub);-webkit-user-select:none;user-select:none;transition:all .15s}
+.ftoggle.on{background:var(--coral-bg);color:var(--coral-dk);border-color:var(--coral-dk)}
 </style>
 </head>
 <body>
@@ -273,9 +298,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="content" id="savContent"><div class="loading">Lade...</div></div>
 </div>
 
+<!-- PAGE: ESSEN -->
+<div class="page" id="page-food">
+  <div class="food-hdr">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <h2 style="font-size:21px;font-weight:800;color:var(--text)">🍽️ Essen & Ausgehen</h2>
+      <span style="font-size:13px;color:var(--sub);font-weight:600" id="foodMonLabel"></span>
+    </div>
+    <div class="fbcard" id="foodBudgetCard"></div>
+  </div>
+  <div class="content" id="foodContent"></div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="bnav">
   <button class="active" data-page="budget"><span class="ni">🏠</span>Haushalt</button>
+  <button data-page="food"><span class="ni">🍽️</span>Essen</button>
   <button data-page="stats"><span class="ni">📊</span>Statistik</button>
   <button data-page="savings"><span class="ni">🌱</span>Sparen</button>
 </nav>
@@ -472,6 +510,7 @@ let S=null, M=null, SAV=null;
 let activeFxId=null, activeCat=null, pendingDel=null, manAccId=null;
 let eFix=false, eEin=false;
 let statsLoaded=false, savLoaded=false, isLoading=false, editingEntryId=null, selectedFxTplId=null;
+let foodType='ausgehen', foodPay='Sabine', editingFoodId=null, foodFilter='all';
 
 // ── FIRESTORE
 const pad=n=>String(n).padStart(2,'0');
@@ -489,6 +528,7 @@ async function loadSettings(){
     S.savingsAccounts=S.savingsAccounts||clone(DEF_ACCS);
     S.suggestions=S.suggestions||[];
     S.fxTemplates=S.fxTemplates||[];
+    S.foodBudget=S.foodBudget||0;
     // Migration: split combined "Sparkasse / Sparen"
     const combined=S.fixedCosts.find(f=>f.name==='Sparkasse / Sparen'||f.id==='sparkasse_sparen');
     if(combined){
@@ -531,6 +571,7 @@ async function loadOrInitMonth(){
       })};
     });
     M.variableEntries=M.variableEntries||[];
+    M.foodEntries=M.foodEntries||[];
     // Ensure Sparkasse and Sparen exist as separate items
     for(const def of[DEF_FX[2],DEF_FX[3]]){
       if(!M.fixedCosts.find(f=>f.id===def.id)){
@@ -1198,6 +1239,178 @@ async function delEntryAndRec(id){
   await saveSett();await delEntry(id);
 }
 
+// ── FOOD PAGE
+function buildFoodPage(){
+  if(!M)return;
+  // Header
+  document.getElementById('foodMonLabel').textContent=`${MN[mo]} ${yr}`;
+  const budget=S.foodBudget||0;
+  const entries=M.foodEntries||[];
+  const spent=entries.reduce((s,e)=>s+(e.amount||0),0);
+  const now=new Date();
+  const daysInMo=new Date(yr,mo+1,0).getDate();
+  const dayOfMo=(yr===now.getFullYear()&&mo===now.getMonth())?now.getDate():daysInMo;
+  const monPct=Math.round(dayOfMo/daysInMo*100);
+  const spentPct=budget>0?Math.min(Math.round(spent/budget*100),100):0;
+  let stCls,stTxt;
+  if(budget===0){stCls='green';stTxt='— kein Budget gesetzt';}
+  else if(spentPct<=monPct){stCls='green';stTxt='✓ Gut im Budget';}
+  else if(spentPct<=monPct+20){stCls='yellow';stTxt='⚠️ Aufpassen';}
+  else{stCls='red';stTxt='🔴 Fast aufgebraucht';}
+  const fillColor=stCls==='green'?'var(--mint-dk)':stCls==='yellow'?'#e8a000':'var(--coral-dk)';
+  const bc=document.getElementById('foodBudgetCard');
+  bc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+    <div><div class="fblbl">Budget / Monat</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+        <span class="fbval">${budget>0?fmt(budget):'—'}</span>
+        <button id="foodBudgetBtn" style="background:rgba(255,255,255,.55);border:none;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:12px;font-weight:600">✏️ ändern</button>
+      </div></div>
+    <div style="text-align:right"><div class="fblbl">Ausgegeben</div>
+      <div class="fbval" style="margin-top:2px">${fmt(spent)}</div>
+      ${budget>0?`<div style="font-size:11px;color:var(--sub);margin-top:1px">noch ${fmt(Math.max(budget-spent,0))} übrig</div>`:''}
+    </div></div>
+  ${budget>0?`<div class="food-prog"><div class="food-prog-fill" style="width:${spentPct}%;background:${fillColor}"></div></div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:11px;color:var(--sub)">Tag ${dayOfMo}/${daysInMo} · ${monPct}% des Monats</span>
+    <span class="food-status ${stCls}">${stTxt}</span></div>`
+  :`<div style="margin-top:6px"><span class="food-status ${stCls}">${stTxt}</span></div>`}`;
+  bc.querySelector('#foodBudgetBtn').onclick=async()=>{
+    const v=prompt('Monats-Budget für Essen & Ausgehen (€):',S.foodBudget||'');
+    const n=parseFloat(v);if(isNaN(n)||n<0)return;
+    S.foodBudget=n;await saveSett();buildFoodPage();
+  };
+  // Content
+  const c=document.getElementById('foodContent');c.innerHTML='';
+  // Filter chips
+  const fw=mk('div','food-filter');
+  [['all','Alle'],['ausgehen','🍽️ Essen gehen'],['bestellen','📦 Bestellen']].forEach(([v,lbl])=>{
+    const b=mk('button','food-fbtn'+(foodFilter===v?' on':''));b.textContent=lbl;
+    b.onclick=()=>{foodFilter=v;buildFoodPage();};fw.appendChild(b);
+  });
+  c.appendChild(fw);
+  // Entry list
+  const card=mk('div','card');
+  const filtered=entries.filter(e=>foodFilter==='all'||e.type===foodFilter).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!filtered.length){
+    const empty=mk('div','');empty.style.cssText='padding:22px 16px;text-align:center;color:var(--muted);font-size:14px';
+    empty.textContent='Noch keine Einträge 🍴';card.appendChild(empty);
+  }else{
+    filtered.forEach(e=>{
+      const row=mk('div','food-entry');
+      row.innerHTML=`<div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.description)||'—'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px">${fmtD(e.date)}</div></div>
+        <span class="food-tag ${e.type==='ausgehen'?'aus':'best'}">${e.type==='ausgehen'?'🍽️ gehen':'📦 bestell.'}</span>
+        <span class="food-tag pay">${esc(e.paidBy||'?')}</span>
+        <span style="font-size:15px;font-weight:800;flex-shrink:0">${fmt(e.amount)}</span>
+        <button class="delbtn">✕</button>`;
+      row.querySelector('.delbtn').onclick=ev=>{ev.stopPropagation();delFoodEntry(e.id);};
+      row.onclick=ev=>{if(ev.target.classList.contains('delbtn'))return;openFoodForm(e.id);};
+      card.appendChild(row);
+    });
+  }
+  c.appendChild(card);
+  // Add button
+  const ab=mk('button','addbtn coral');ab.innerHTML='&#43; Eintrag hinzufügen';
+  ab.onclick=()=>openFoodForm(null);c.appendChild(ab);
+  // Form (hidden by default)
+  const form=mk('div','sform fcoral');form.id='foodForm';
+  form.innerHTML=`<div class="frow">
+    <input class="fi" type="number" id="foodAmt" placeholder="€" step="0.01" style="width:80px">
+    <input class="fi fi-h" id="foodDesc" list="sugg" placeholder="Was? (z.B. Sushi bei Sakura)">
+  </div>
+  <div class="frow"><input class="fi" type="date" id="foodDate" style="flex:1"></div>
+  <div class="frow ftoggle-row" id="foodTypeRow"></div>
+  <div class="frow ftoggle-row" id="foodPayRow"></div>
+  <div class="frow" style="margin:0">
+    <button class="bsave" id="foodSaveBtn">Speichern</button>
+    <button class="bcanc" id="foodCancBtn">Abbrechen</button>
+  </div>`;
+  c.appendChild(form);
+  buildFoodToggles();
+  form.querySelector('#foodSaveBtn').onclick=saveFoodEntry;
+  form.querySelector('#foodCancBtn').onclick=()=>{editingFoodId=null;showF('foodForm',false);};
+  // Mini stats
+  if(entries.length){
+    const ausT=entries.filter(e=>e.type==='ausgehen').reduce((s,e)=>s+(e.amount||0),0);
+    const bestT=entries.filter(e=>e.type==='bestellen').reduce((s,e)=>s+(e.amount||0),0);
+    const sabT=entries.filter(e=>e.paidBy==='Sabine').reduce((s,e)=>s+(e.amount||0),0);
+    const pedT=entries.filter(e=>e.paidBy==='Pedro').reduce((s,e)=>s+(e.amount||0),0);
+    const bothT=entries.filter(e=>e.paidBy==='Beide').reduce((s,e)=>s+(e.amount||0),0);
+    const sc=mk('div','card');
+    sc.innerHTML=`<div class="card-hd"><span class="ctitle">📊 ${MN[mo]} ${yr} · Überblick</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px">
+        <div style="background:var(--peach-bg);border-radius:12px;padding:10px">
+          <div class="fblbl">🍽️ Essen gehen</div><div class="fbval">${fmt(ausT)}</div></div>
+        <div style="background:var(--lav-bg);border-radius:12px;padding:10px">
+          <div class="fblbl">📦 Bestellen</div><div class="fbval">${fmt(bestT)}</div></div>
+        <div style="background:var(--rose-bg);border-radius:12px;padding:10px">
+          <div class="fblbl">👩 Sabine</div><div class="fbval">${fmt(sabT)}</div></div>
+        <div style="background:var(--lav-bg);border-radius:12px;padding:10px">
+          <div class="fblbl">👨 Pedro</div><div class="fbval">${fmt(pedT)}</div></div>
+        ${bothT>0?`<div style="background:var(--sun-bg);border-radius:12px;padding:10px;grid-column:1/-1">
+          <div class="fblbl">👫 Beide</div><div class="fbval">${fmt(bothT)}</div></div>`:''}
+      </div>`;
+    c.appendChild(sc);
+  }
+}
+function buildFoodToggles(){
+  const tr=document.getElementById('foodTypeRow'),pr=document.getElementById('foodPayRow');
+  if(!tr||!pr)return;
+  tr.innerHTML='';pr.innerHTML='';
+  [['ausgehen','🍽️ Essen gehen'],['bestellen','📦 Bestellen']].forEach(([v,lbl])=>{
+    const b=mk('button','ftoggle'+(foodType===v?' on':''));b.textContent=lbl;
+    b.onclick=()=>{foodType=v;buildFoodToggles();};tr.appendChild(b);
+  });
+  [['Sabine','👩 Sabine'],['Pedro','👨 Pedro'],['Beide','👫 Beide']].forEach(([v,lbl])=>{
+    const b=mk('button','ftoggle'+(foodPay===v?' on':''));b.textContent=lbl;
+    b.onclick=()=>{foodPay=v;buildFoodToggles();};pr.appendChild(b);
+  });
+}
+function openFoodForm(id){
+  if(id){
+    const e=(M.foodEntries||[]).find(x=>x.id===id);if(!e)return;
+    editingFoodId=id;
+    document.getElementById('foodAmt').value=e.amount||'';
+    document.getElementById('foodDesc').value=e.description||'';
+    document.getElementById('foodDate').value=e.date||today();
+    foodType=e.type||'ausgehen';foodPay=e.paidBy||'Sabine';
+  }else{
+    editingFoodId=null;
+    document.getElementById('foodAmt').value='';
+    document.getElementById('foodDesc').value='';
+    document.getElementById('foodDate').value=today();
+    foodType='ausgehen';foodPay='Sabine';
+  }
+  buildFoodToggles();showF('foodForm',true);
+  document.getElementById('foodAmt').focus();
+}
+async function saveFoodEntry(){
+  const amt=parseFloat(document.getElementById('foodAmt').value);
+  const desc=document.getElementById('foodDesc').value.trim();
+  const date=document.getElementById('foodDate').value||today();
+  if(!amt||amt<=0){snack('Bitte Betrag eingeben');return;}
+  const backup={m:clone(M),sav:null};
+  M.foodEntries=M.foodEntries||[];
+  if(editingFoodId){
+    const e=M.foodEntries.find(x=>x.id===editingFoodId);
+    if(e){e.amount=amt;e.description=desc;e.date=date;e.type=foodType;e.paidBy=foodPay;}
+  }else{
+    M.foodEntries.push({id:uid(),date,description:desc,amount:amt,type:foodType,paidBy:foodPay});
+  }
+  const wasEditing=!!editingFoodId;
+  editingFoodId=null;showF('foodForm',false);
+  buildFoodPage();
+  snack(wasEditing?'Geändert ✓':'Hinzugefügt ✓',wasEditing?null:backup);
+  try{await save();}catch(e){snack('⚠️ Speichern fehlgeschlagen');}
+}
+async function delFoodEntry(id){
+  const backup={m:clone(M),sav:null};
+  M.foodEntries=(M.foodEntries||[]).filter(e=>e.id!==id);
+  buildFoodPage();snack('Gelöscht',backup);
+  try{await save();}catch(e){snack('⚠️ Speichern fehlgeschlagen');}
+}
+
 // ── STATS PAGE
 async function buildStats(){
   const c=document.getElementById('statsContent');c.innerHTML='<div class="loading">Lade... 🌸</div>';
@@ -1274,6 +1487,19 @@ async function buildStats(){
     (m.data.fixedCosts||[]).filter(isSavItem).forEach(fc=>{
       const a=effAmt(fc);if(a)items[`🌱 Sparen`]=(items[`🌱 Sparen`]||0)+a;
     });
+    return items;
+  }));
+  // Food Breakdown (gesamt)
+  c.appendChild(buildStatsBlock('🍽️ Essen & Ausgehen (Gesamt)','peach',allMonths,m=>{
+    const items={};
+    (m.data.foodEntries||[]).forEach(e=>{
+      const k=e.type==='ausgehen'?'🍽️ Essen gehen':'📦 Bestellen';
+      items[k]=(items[k]||0)+(e.amount||0);
+    });
+    // Budget comparison row
+    if(S.foodBudget&&m.yr===yr&&m.mo===mo){
+      items[`🎯 Budget (${MN[mo]})`]=S.foodBudget;
+    }
     return items;
   }));
   // Variable Breakdown (gesamt)
@@ -1552,6 +1778,7 @@ document.querySelectorAll('.bnav button').forEach(btn=>{
     document.getElementById(`page-${pg}`).classList.add('active');btn.classList.add('active');
     if(pg==='stats'&&!statsLoaded){statsLoaded=true;await buildStats();}
     if(pg==='savings'&&!savLoaded){savLoaded=true;await buildSavingsPage();}
+    if(pg==='food')buildFoodPage();
   };
 });
 function navTo(delta){
