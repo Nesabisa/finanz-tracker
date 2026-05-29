@@ -528,7 +528,6 @@ async function loadSettings(){
     S.savingsAccounts=S.savingsAccounts||clone(DEF_ACCS);
     S.suggestions=S.suggestions||[];
     S.fxTemplates=S.fxTemplates||[];
-    S.foodBudget=S.foodBudget||0;
     // Migration: split combined "Sparkasse / Sparen"
     const combined=S.fixedCosts.find(f=>f.name==='Sparkasse / Sparen'||f.id==='sparkasse_sparen');
     if(combined){
@@ -1244,41 +1243,17 @@ function buildFoodPage(){
   if(!M)return;
   // Header
   document.getElementById('foodMonLabel').textContent=`${MN[mo]} ${yr}`;
-  const budget=S.foodBudget||0;
   const entries=M.foodEntries||[];
   const spent=entries.reduce((s,e)=>s+(e.amount||0),0);
-  const now=new Date();
-  const daysInMo=new Date(yr,mo+1,0).getDate();
-  const dayOfMo=(yr===now.getFullYear()&&mo===now.getMonth())?now.getDate():daysInMo;
-  const monPct=Math.round(dayOfMo/daysInMo*100);
-  const spentPct=budget>0?Math.min(Math.round(spent/budget*100),100):0;
-  let stCls,stTxt;
-  if(budget===0){stCls='green';stTxt='— kein Budget gesetzt';}
-  else if(spentPct<=monPct){stCls='green';stTxt='✓ Gut im Budget';}
-  else if(spentPct<=monPct+20){stCls='yellow';stTxt='⚠️ Aufpassen';}
-  else{stCls='red';stTxt='🔴 Fast aufgebraucht';}
-  const fillColor=stCls==='green'?'var(--mint-dk)':stCls==='yellow'?'#e8a000':'var(--coral-dk)';
+  const ausT=entries.filter(e=>e.type==='ausgehen').reduce((s,e)=>s+(e.amount||0),0);
+  const bestT=entries.filter(e=>e.type==='bestellen').reduce((s,e)=>s+(e.amount||0),0);
   const bc=document.getElementById('foodBudgetCard');
-  bc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-    <div><div class="fblbl">Budget / Monat</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
-        <span class="fbval">${budget>0?fmt(budget):'—'}</span>
-        <button id="foodBudgetBtn" style="background:rgba(255,255,255,.55);border:none;border-radius:8px;padding:3px 9px;cursor:pointer;font-size:12px;font-weight:600">✏️ ändern</button>
-      </div></div>
-    <div style="text-align:right"><div class="fblbl">Ausgegeben</div>
-      <div class="fbval" style="margin-top:2px">${fmt(spent)}</div>
-      ${budget>0?`<div style="font-size:11px;color:var(--sub);margin-top:1px">noch ${fmt(Math.max(budget-spent,0))} übrig</div>`:''}
-    </div></div>
-  ${budget>0?`<div class="food-prog"><div class="food-prog-fill" style="width:${spentPct}%;background:${fillColor}"></div></div>
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <span style="font-size:11px;color:var(--sub)">Tag ${dayOfMo}/${daysInMo} · ${monPct}% des Monats</span>
-    <span class="food-status ${stCls}">${stTxt}</span></div>`
-  :`<div style="margin-top:6px"><span class="food-status ${stCls}">${stTxt}</span></div>`}`;
-  bc.querySelector('#foodBudgetBtn').onclick=async()=>{
-    const v=prompt('Monats-Budget für Essen & Ausgehen (€):',S.foodBudget||'');
-    const n=parseFloat(v);if(isNaN(n)||n<0)return;
-    S.foodBudget=n;await saveSett();buildFoodPage();
-  };
+  bc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center">
+    <div><div class="fblbl">Gesamt ${MN[mo]}</div><div class="fbval">${fmt(spent)}</div></div>
+    <div style="display:flex;gap:12px">
+      <div style="text-align:center"><div class="fblbl">🍽️ gehen</div><div style="font-size:16px;font-weight:800">${fmt(ausT)}</div></div>
+      <div style="text-align:center"><div class="fblbl">📦 bestell.</div><div style="font-size:16px;font-weight:800">${fmt(bestT)}</div></div>
+    </div></div>`;
   // Content
   const c=document.getElementById('foodContent');c.innerHTML='';
   // Filter chips
@@ -1330,20 +1305,14 @@ function buildFoodPage(){
   buildFoodToggles();
   form.querySelector('#foodSaveBtn').onclick=saveFoodEntry;
   form.querySelector('#foodCancBtn').onclick=()=>{editingFoodId=null;showF('foodForm',false);};
-  // Mini stats
+  // Wer-hat-gezahlt Karte
   if(entries.length){
-    const ausT=entries.filter(e=>e.type==='ausgehen').reduce((s,e)=>s+(e.amount||0),0);
-    const bestT=entries.filter(e=>e.type==='bestellen').reduce((s,e)=>s+(e.amount||0),0);
     const sabT=entries.filter(e=>e.paidBy==='Sabine').reduce((s,e)=>s+(e.amount||0),0);
     const pedT=entries.filter(e=>e.paidBy==='Pedro').reduce((s,e)=>s+(e.amount||0),0);
     const bothT=entries.filter(e=>e.paidBy==='Beide').reduce((s,e)=>s+(e.amount||0),0);
     const sc=mk('div','card');
-    sc.innerHTML=`<div class="card-hd"><span class="ctitle">📊 ${MN[mo]} ${yr} · Überblick</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px">
-        <div style="background:var(--peach-bg);border-radius:12px;padding:10px">
-          <div class="fblbl">🍽️ Essen gehen</div><div class="fbval">${fmt(ausT)}</div></div>
-        <div style="background:var(--lav-bg);border-radius:12px;padding:10px">
-          <div class="fblbl">📦 Bestellen</div><div class="fbval">${fmt(bestT)}</div></div>
+    sc.innerHTML=`<div class="card-hd"><span class="ctitle">👫 Wer hat bezahlt</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr${bothT>0?'':''};gap:8px;padding:12px 14px">
         <div style="background:var(--rose-bg);border-radius:12px;padding:10px">
           <div class="fblbl">👩 Sabine</div><div class="fbval">${fmt(sabT)}</div></div>
         <div style="background:var(--lav-bg);border-radius:12px;padding:10px">
