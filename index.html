@@ -1503,6 +1503,11 @@ function addBtn(fid,label,color,bgCls){
 }
 
 // ── BACKUP
+function suggChipsHTML(){
+  const suggs=S?.suggestions||[];
+  if(suggs.length===0) return '<span style="font-size:12px;color:var(--muted);font-style:italic">Keine gespeicherten Vorschläge.</span>';
+  return suggs.map((v,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--lav-bg);border:1px solid var(--border);border-radius:20px;padding:3px 8px 3px 10px;font-size:12px;font-weight:600;color:var(--sub)">${esc(v)}<button onclick="delSugg(${i})" title="Löschen" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 0 0 4px;line-height:1">×</button></span>`).join('');
+}
 function buildBackup(){
   const sec=mk('div','card');
   sec.innerHTML=`<div class="card-hd" style="border-left:4px solid var(--muted)"><span class="ctitle">⚙️ Backup</span></div>
@@ -1513,28 +1518,18 @@ function buildBackup(){
     <div style="padding:0 16px 14px;font-size:12px;color:var(--muted)">💡 Tipp: App auf Computer & Handy öffnen — Daten sind automatisch überall gleich (Firebase-Sync).</div>
     <div style="border-top:1px solid var(--border);padding:12px 16px 14px">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Gespeicherte Vorschläge</div>
-      <div id="sugg-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div id="sugg-chips" style="display:flex;flex-wrap:wrap;gap:6px">${suggChipsHTML()}</div>
     </div>`;
   sec.querySelector('#expBtn').onclick=exportData;
   sec.querySelector('#impBtn').onclick=()=>document.getElementById('importFile').click();
-  renderSuggChips();
   return sec;
-}
-function renderSuggChips(){
-  const el=document.getElementById('sugg-chips');
-  if(!el)return;
-  const suggs=S?.suggestions||[];
-  if(suggs.length===0){
-    el.innerHTML='<span style="font-size:12px;color:var(--muted);font-style:italic">Keine gespeicherten Vorschläge.</span>';
-    return;
-  }
-  el.innerHTML=suggs.map((v,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--lav-bg);border:1px solid var(--border);border-radius:20px;padding:3px 8px 3px 10px;font-size:12px;font-weight:600;color:var(--sub)">${esc(v)}<button onclick="delSugg(${i})" title="Löschen" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 0 0 4px;line-height:1">×</button></span>`).join('');
 }
 window.delSugg=async function(i){
   if(!S?.suggestions)return;
   S.suggestions.splice(i,1);
   refreshSugg();
-  renderSuggChips();
+  const el=document.getElementById('sugg-chips');
+  if(el) el.innerHTML=suggChipsHTML();
   await saveSett();
 };
 async function exportData(){
