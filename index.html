@@ -299,7 +299,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="sform flav" id="fxAddForm">
         <div class="frow">
-          <input class="fi fi-h" id="subName" list="sugg" placeholder="Name (z.B. Katzenkrankenversicherung)">
+          <input class="fi fi-h" id="subName" placeholder="Name (z.B. Katzenkrankenversicherung)">
           <input class="fi" type="number" id="subAmt" placeholder="€" step="0.01" style="width:80px">
         </div>
         <div class="frow" id="subAccRow" style="display:none">
@@ -331,10 +331,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <input class="fi fi-h" type="number" id="eAmt" placeholder="Betrag (€)" step="0.01" min="0">
           <input class="fi fi-h" type="date" id="eDate">
         </div>
-        <div style="position:relative;margin-bottom:8px">
-          <input class="fi" id="eDesc" placeholder="Beschreibung (optional)" autocomplete="off" style="width:100%">
-          <div id="eDesc-dd" style="display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(180,60,110,0.12);z-index:300;max-height:200px;overflow-y:auto"></div>
-        </div>
+        <input class="fi" id="eDesc" placeholder="Beschreibung (optional)" autocomplete="off" style="margin-bottom:8px">
         <div class="chips">
           <div class="chip" id="chipFix">🔄 Wiederholt sich</div>
           <div class="chip" id="chipEin">💫 Einmalausgabe</div>
@@ -412,7 +409,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 
 <input type="file" id="importFile" accept=".json" style="display:none">
-<datalist id="sugg"></datalist>
 <div class="snack" id="snack"><span id="snackMsg"></span><button class="snack-undo" id="snackUndo" style="display:none">↩ Rückgängig</button></div>
 
 <script type="module">
@@ -596,11 +592,8 @@ async function undoLast(){
 function showF(id,show){const f=document.getElementById(id);if(f)f.style.display=show?'block':'none';}
 function closeAllSheets(){['fxOvl','varOvl','manOvl','sondOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
 
-function refreshSugg(){
-  const set=new Set([...(S.suggestions||[]),...(S.categories||[]).map(c=>c.name),...(S.fixedCosts||[]).map(f=>f.name),...(S.recurring||[]).map(r=>r.description).filter(Boolean),...(M.variableEntries||[]).map(e=>e.description).filter(Boolean)]);
-  document.getElementById('sugg').innerHTML=[...set].filter(Boolean).map(v=>`<option value="${esc(v)}">`).join('');
-}
-function addSugg(v){if(v&&!(S.suggestions||[]).includes(v)){S.suggestions=S.suggestions||[];S.suggestions.push(v);}}
+function refreshSugg(){}
+function addSugg(v){}
 
 // ── CALCS
 function effAmt(fc){return fc.subs&&fc.subs.length?fc.subs.reduce((s,si)=>s+(si.amount||0),0):(fc.amount||0);}
@@ -730,7 +723,7 @@ function buildIncome(){
   }
   sec.appendChild(list);
   const[ab,af]=addBtn('ef','+ Extra Einnahme','rose','frose');sec.appendChild(ab);
-  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="xd" list="sugg" placeholder="Beschreibung"><input class="fi" type="number" id="xa" placeholder="€" step="0.01" style="width:80px"></div>
+  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="xd" placeholder="Beschreibung"><input class="fi" type="number" id="xa" placeholder="€" step="0.01" style="width:80px"></div>
     <div class="frow" style="margin:0"><button class="bsave" id="xs">Hinzufügen</button><button class="bcanc" id="xc">Abbrechen</button></div>`;
   sec.appendChild(af);
   const salIn=sec.querySelector('#salIn');
@@ -802,7 +795,7 @@ function buildFixed(){
     render();Promise.all([save(),saveSett()]);
   });
   const[ab,af]=addBtn('ff','+ Fixe Position hinzufügen','lav','flav');sec.appendChild(ab);
-  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="fn" list="sugg" placeholder="Name"><input class="fi" type="number" id="fa" placeholder="€" step="0.01" style="width:80px"></div>
+  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="fn" placeholder="Name"><input class="fi" type="number" id="fa" placeholder="€" step="0.01" style="width:80px"></div>
     <div class="frow" style="margin:0"><button class="bsave" id="fs">Hinzufügen</button><button class="bcanc" id="fc2">Abbrechen</button></div>`;
   // Vorlagen-Chips
   const tpls=S.fxTemplates||[];
@@ -1110,7 +1103,7 @@ function buildVariable(){
   M.variableEntries=(M.variableEntries||[]).filter(en=>knownCatIds.has(en.categoryId));
   if((M.variableEntries?.length||0)<before)save().catch(()=>{});}
   const[ab,af]=addBtn('cf','+ Neue Kategorie','peach','fpeach');sec.appendChild(ab);
-  af.innerHTML=`<div class="frow"><input class="fi" id="ci" placeholder="🌟" style="width:52px;text-align:center;font-size:20px"><input class="fi fi-h" id="cn" list="sugg" placeholder="Kategoriename"><button class="bsave" id="cs">OK</button><button class="bcanc" id="cc">✕</button></div>`;
+  af.innerHTML=`<div class="frow"><input class="fi" id="ci" placeholder="🌟" style="width:52px;text-align:center;font-size:20px"><input class="fi fi-h" id="cn" placeholder="Kategoriename"><button class="bsave" id="cs">OK</button><button class="bcanc" id="cc">✕</button></div>`;
   sec.appendChild(af);
   af.querySelector('#cs').onclick=addCat;af.querySelector('#cc').onclick=()=>showF('cf',false);
   return sec;
@@ -1520,47 +1513,6 @@ function buildBackup(){
 }
 
 // ── DESCRIPTION AUTOCOMPLETE WITH DELETE
-let _suggItems=[];
-function getDescSuggs(query){
-  const all=[...new Set([
-    ...(S.suggestions||[]),
-    ...(S.recurring||[]).map(r=>r.description).filter(Boolean),
-    ...(M.variableEntries||[]).map(e=>e.description).filter(Boolean)
-  ])].filter(Boolean).sort();
-  if(!query) return all;
-  const q=query.toLowerCase();
-  return all.filter(s=>s.toLowerCase().includes(q));
-}
-function renderDescDD(){
-  const dd=document.getElementById('eDesc-dd');
-  const inp=document.getElementById('eDesc');
-  if(!dd||!inp) return;
-  _suggItems=getDescSuggs(inp.value.trim());
-  if(!_suggItems.length){dd.style.display='none';return;}
-  dd.innerHTML=_suggItems.map((v,i)=>{
-    const saved=(S.suggestions||[]).includes(v);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" data-i="${i}">`
-      +`<span>${esc(v)}</span>`
-      +(saved?`<button data-del="${i}" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:0 0 0 10px;line-height:1;flex-shrink:0">×</button>`:'')
-      +`</div>`;
-  }).join('');
-  dd.querySelectorAll('[data-i]').forEach(row=>{
-    row.addEventListener('mousedown',e=>{
-      const delBtn=e.target.closest('[data-del]');
-      if(delBtn){e.preventDefault();delSuggByVal(_suggItems[+delBtn.dataset.del]);return;}
-      e.preventDefault();
-      inp.value=_suggItems[+row.dataset.i];
-      dd.style.display='none';
-    });
-  });
-  dd.style.display='block';
-}
-async function delSuggByVal(v){
-  S.suggestions=(S.suggestions||[]).filter(s=>s!==v);
-  refreshSugg();
-  renderDescDD();
-  await saveSett();
-}
 async function exportData(){
   snack('Exportiere... 📤');
   const months={};
@@ -1644,9 +1596,6 @@ document.getElementById('varTitle').addEventListener('change',async e=>{if(activ
 document.getElementById('varAddTrig').onclick=()=>{const f=document.getElementById('varForm');showF('varForm',f.style.display!=='block');if(f.style.display==='block')document.getElementById('eAmt').focus();};
 document.getElementById('saveEntry').onclick=saveEntry;document.getElementById('cancEntry').onclick=resetVarForm;
 document.getElementById('eDesc').addEventListener('keydown',e=>{if(e.key==='Enter')saveEntry();});
-document.getElementById('eDesc').addEventListener('focus',()=>renderDescDD());
-document.getElementById('eDesc').addEventListener('input',()=>renderDescDD());
-document.getElementById('eDesc').addEventListener('blur',()=>setTimeout(()=>{const dd=document.getElementById('eDesc-dd');if(dd)dd.style.display='none';},150));
 document.getElementById('chipFix').onclick=()=>{eFix=!eFix;if(eFix)eEin=false;updChips();};
 document.getElementById('chipEin').onclick=()=>{eEin=!eEin;if(eEin)eFix=false;updChips();};
 
