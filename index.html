@@ -594,7 +594,7 @@ function showF(id,show){const f=document.getElementById(id);if(f)f.style.display
 function closeAllSheets(){['fxOvl','varOvl','manOvl','sondOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
 
 function refreshSugg(){
-  const set=new Set([...(S.suggestions||[]),...(S.categories||[]).map(c=>c.name),...(S.fixedCosts||[]).map(f=>f.name),...(S.fixedCosts||[]).flatMap(f=>(f.subs||[]).map(s=>s.name)),...(S.recurring||[]).map(r=>r.description).filter(Boolean),...(M.variableEntries||[]).map(e=>e.description).filter(Boolean)]);
+  const set=new Set([...(S.suggestions||[]),...(S.categories||[]).map(c=>c.name),...(S.fixedCosts||[]).map(f=>f.name),...(S.recurring||[]).map(r=>r.description).filter(Boolean),...(M.variableEntries||[]).map(e=>e.description).filter(Boolean)]);
   document.getElementById('sugg').innerHTML=[...set].filter(Boolean).map(v=>`<option value="${esc(v)}">`).join('');
 }
 function addSugg(v){if(v&&!(S.suggestions||[]).includes(v)){S.suggestions=S.suggestions||[];S.suggestions.push(v);}}
@@ -998,7 +998,7 @@ async function updSubAmt(fid,sid,a){
 async function updSubName(fid,sid,n){
   const fc=M.fixedCosts.find(f=>f.id===fid),si=fc?.subs?.find(s=>s.id===sid);if(si)si.name=n;
   const sf=S.fixedCosts.find(f=>f.id===fid),ss=sf?.subs?.find(s=>s.id===sid);if(ss)ss.name=n;
-  addSugg(n);await Promise.all([save(),saveSett()]);
+  await Promise.all([save(),saveSett()]);
 }
 async function updSubAccId(fid,sid,accId){
   const fc=M.fixedCosts.find(f=>f.id===fid),si=fc?.subs?.find(s=>s.id===sid);if(si)si.accId=accId;
@@ -1033,7 +1033,6 @@ async function addSub(){
   document.getElementById('subName').value='';document.getElementById('subAmt').value='';
   showF('fxAddForm',false);renderFxBody();render();
   snack('Hinzugefügt ✓',backup);
-  addSugg(n);
   try{await Promise.all([save(),saveSett()]);}
   catch(e){console.error('addSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
