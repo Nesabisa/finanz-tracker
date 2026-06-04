@@ -292,25 +292,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="xbtn" id="closeFx">&#x2715;</button>
     </div>
     <div class="sbody" id="fxBody"></div>
-    <div class="sfoot">
-      <div style="display:flex">
-        <button class="addbtn lav" id="fxAddSubTrig" style="flex:1">&#43; Unterposten hinzufügen</button>
-        <button class="addbtn lav" id="saveFxTplBtn" style="width:auto;flex-shrink:0;font-size:13px;padding:10px 14px" title="Als Vorlage speichern">💾 Vorlage</button>
-      </div>
-      <div class="sform flav" id="fxAddForm">
-        <div class="frow">
-          <input class="fi fi-h" id="subName" placeholder="Name (z.B. Katzenkrankenversicherung)">
-          <input class="fi" type="text" id="subAmt" placeholder="€" style="width:80px">
-        </div>
-        <div class="frow" id="subAccRow" style="display:none">
-          <select class="fi" id="subAccSel" style="flex:1"></select>
-        </div>
-        <div class="frow" style="margin:0">
-          <button class="bsave" id="subSave">Hinzufügen</button>
-          <button class="bcanc" id="subCanc">Abbrechen</button>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -942,6 +923,41 @@ function renderFxBody(){
       body.appendChild(r);
     }
   }
+
+  // Add-sub button + inline form at bottom of scrollable body
+  const addWrap=mk('div','');
+  addWrap.style.cssText='padding:8px 16px 24px;border-top:1px solid var(--border);margin-top:4px';
+  const isAccFx=isSavItem(fc);
+  const accOpts2=(S.savingsAccounts||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  addWrap.innerHTML=`
+    <div style="display:flex;gap:6px">
+      <button id="fxAddSubTrig" class="addbtn lav" style="flex:1">&#43; Unterposten hinzufügen</button>
+      <button id="saveFxTplBtn" class="addbtn lav" style="width:auto;flex-shrink:0;font-size:13px;padding:10px 14px">💾 Vorlage</button>
+    </div>
+    <div id="fxAddForm" style="display:none">
+      <div class="sform flav" style="margin-top:8px">
+        <div class="frow">
+          <input class="fi fi-h" id="subName" placeholder="Name">
+          <input class="fi" type="text" id="subAmt" placeholder="€" style="width:80px">
+        </div>
+        <div class="frow" id="subAccRow" style="${isAccFx?'':'display:none'}">
+          <select class="fi" id="subAccSel" style="flex:1"><option value="">— Konto —</option>${accOpts2}</select>
+        </div>
+        <div class="frow" style="margin:0">
+          <button class="bsave" id="subSave">Hinzufügen</button>
+          <button class="bcanc" id="subCanc">Abbrechen</button>
+        </div>
+      </div>
+    </div>`;
+  body.appendChild(addWrap);
+  addWrap.querySelector('#fxAddSubTrig').onclick=()=>{
+    const f=addWrap.querySelector('#fxAddForm'),open=f.style.display==='block';
+    f.style.display=open?'none':'block';
+    if(!open){addWrap.querySelector('#subName').focus();setTimeout(()=>body.scrollTop=body.scrollHeight,60);}
+  };
+  addWrap.querySelector('#saveFxTplBtn').onclick=saveFxTemplate;
+  addWrap.querySelector('#subSave').onclick=addSub;
+  addWrap.querySelector('#subCanc').onclick=()=>{addWrap.querySelector('#fxAddForm').style.display='none';};
 }
 
 async function toggleFxDirect(id){
@@ -1638,28 +1654,9 @@ document.getElementById('closeFx').onclick=()=>document.getElementById('fxOvl').
 document.getElementById('fxOvl').onclick=e=>{if(e.target===document.getElementById('fxOvl'))document.getElementById('fxOvl').classList.remove('open');};
 document.getElementById('fxTitle').addEventListener('change',async e=>{const fc=M.fixedCosts.find(f=>f.id===activeFxId);if(fc){await renameFx(fc.id,e.target.value);}});
 document.getElementById('fxIconBtn').onclick=()=>{const fc=M.fixedCosts.find(f=>f.id===activeFxId);if(!fc)return;const cur=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);const v=prompt('Icon ändern (Emoji eingeben):',cur);if(v&&v.trim())updFxIcon(fc.id,v.trim());};
-document.getElementById('fxAddSubTrig').onclick=()=>{
-  const f=document.getElementById('fxAddForm'),showing=f.style.display==='block';
-  if(!showing){
-    const isAccFx=isSavItem(M.fixedCosts.find(f=>f.id===activeFxId)||{});
-    const row=document.getElementById('subAccRow');row.style.display=isAccFx?'':'none';
-    if(isAccFx){
-      const accs=S.savingsAccounts||[];
-      const sel=document.getElementById('subAccSel');
-      sel.innerHTML=`<option value="">— Konto wählen —</option>`+accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
-      if(accs.length===1)sel.value=accs[0].id;
-    }
-  }
-  showF('fxAddForm',!showing);
-  if(!showing){
-    document.getElementById('subName').focus();
-    setTimeout(()=>{const b=document.getElementById('fxBody');if(b)b.scrollTop=0;},60);
-  }
-};
-document.getElementById('subSave').onclick=addSub;
-document.getElementById('subCanc').onclick=()=>showF('fxAddForm',false);
+// fxAddSubTrig, subSave, subCanc are now rendered dynamically in renderFxBody()
 document.getElementById('snackUndo').onclick=undoLast;
-document.getElementById('saveFxTplBtn').onclick=saveFxTemplate;
+// saveFxTplBtn is now rendered dynamically in renderFxBody()
 
 // Variable sheet
 document.getElementById('closeVar').onclick=()=>document.getElementById('varOvl').classList.remove('open');
