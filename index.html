@@ -1286,13 +1286,28 @@ async function buildStats(){
     });
     return items;
   }));
-  c.appendChild(buildStatsBlock('🌱 Sparen (Gesamt)','sun',allMonths,m=>{
-    const items={};
-    (m.data.fixedCosts||[]).filter(isSavItem).forEach(fc=>{
-      const a=effAmt(fc);if(a)items[`🌱 Sparen`]=(items[`🌱 Sparen`]||0)+a;
+  if(!SAV)await loadSavings();
+  {
+    const regularSav=allMonths.reduce((s,m)=>s+(m.data.fixedCosts||[]).filter(isSavItem).reduce((ss,fc)=>ss+effAmt(fc),0),0);
+    const sondEin=(SAV?.specialIncome||[]).reduce((s,d)=>s+(d.amount||0),0);
+    const sondAus=(SAV?.withdrawals||[]).reduce((s,w)=>s+(w.amount||0),0);
+    const netSav=regularSav+sondEin-sondAus;
+    const savBlock=mk('div','expand-block');
+    const savHd=mk('div','exp-hd');
+    savHd.innerHTML=`<span class="exp-title">🌱 Sparen (Gesamt)</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:700">${fmt(netSav)}</span><span class="exp-ico">›</span></div>`;
+    const savBody=mk('div','exp-body');
+    const rows=[['🌱 Monatliches Sparen',regularSav,1],['✨ Sondereinnahmen',sondEin,1],['💸 Sonderausgaben',sondAus,-1]];
+    const maxV=Math.max(...rows.map(([,v])=>v),1);
+    rows.forEach(([name,amt,sign])=>{
+      if(!amt)return;
+      const r=mk('div','bar-row');
+      r.innerHTML=`<span class="bar-lbl">${name}</span><div class="bar-bg"><div class="bar-fill sun" style="width:${Math.round(amt/maxV*100)}%"></div></div><span class="bar-val" style="${sign<0?'color:var(--coral-dk)':''}">${sign<0?'-':''}${fmt(amt)}</span>`;
+      savBody.appendChild(r);
     });
-    return items;
-  }));
+    if(!savBody.children.length)savBody.innerHTML='<div class="empty-hint">Keine Daten</div>';
+    savHd.onclick=()=>{savBody.classList.toggle('open');savHd.querySelector('.exp-ico').classList.toggle('open');};
+    savBlock.appendChild(savHd);savBlock.appendChild(savBody);c.appendChild(savBlock);
+  }
   // Variable Breakdown (gesamt)
   c.appendChild(buildStatsBlock('💳 Variable Ausgaben (Gesamt)','peach',allMonths,m=>{
     const items={};
