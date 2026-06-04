@@ -472,6 +472,7 @@ let yr=new Date().getFullYear(), mo=new Date().getMonth();
 let S=null, M=null, SAV=null;
 let activeFxId=null, activeCat=null, pendingDel=null, manAccId=null;
 const expandedFxIds=new Set();
+const expandedCatIds=new Set();
 let eFix=false, eEin=false;
 let statsLoaded=false, savLoaded=false, isLoading=false, editingEntryId=null, selectedFxTplId=null;
 
@@ -830,8 +831,15 @@ function buildFixed(){
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
 
-    // ✏️ = rename only, no sheet
-    editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
+    // ✏️ = inline rename (no popup)
+    editIco.onclick=e=>{
+      e.stopPropagation();
+      const nameSpan=row.querySelector('.edit-name');
+      const inp=mk('input');inp.type='text';inp.value=fc.name;inp.className='fi';inp.style.cssText='flex:1;font-size:14px;font-weight:700;padding:2px 6px;max-width:140px';
+      nameSpan.replaceWith(inp);inp.focus();inp.select();
+      const done=()=>{const v=inp.value.trim();if(v&&v!==fc.name)renameFx(fc.id,v);const ns=mk('span');ns.className='edit-name';ns.textContent=v||fc.name;inp.replaceWith(ns);};
+      inp.addEventListener('blur',done);inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=fc.name;inp.blur();}});
+    };
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
 
     if(n===0){
@@ -908,7 +916,14 @@ function buildSparen(){
       ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
-    editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
+    editIco.onclick=e=>{
+      e.stopPropagation();
+      const nameSpan=row.querySelector('.edit-name');
+      const inp=mk('input');inp.type='text';inp.value=fc.name;inp.className='fi';inp.style.cssText='flex:1;font-size:14px;font-weight:700;padding:2px 6px;max-width:140px';
+      nameSpan.replaceWith(inp);inp.focus();inp.select();
+      const done=()=>{const v=inp.value.trim();if(v&&v!==fc.name)renameFx(fc.id,v);const ns=mk('span');ns.className='edit-name';ns.textContent=v||fc.name;inp.replaceWith(ns);};
+      inp.addEventListener('blur',done);inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=fc.name;inp.blur();}});
+    };
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
     if(n===0){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
@@ -1180,11 +1195,73 @@ function buildVariable(){
     r.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span><span class="ico ico-btn" title="Icon ändern">${cat.icon||'🌟'}</span>
       <div class="name-wrap"><span class="edit-name">${esc(cat.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
       <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><span class="arr">›</span><button class="delbtn">✕</button>`;
-    r.querySelector('.ico-btn').onclick=e=>{e.stopPropagation();const v=prompt('Neues Emoji für "'+cat.name+'":',cat.icon||'🌟');if(v&&v.trim())changeCatIcon(cat.id,v.trim());};
-    r.querySelector('.edit-ico').onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',cat.name);if(v&&v.trim())renameCat(cat.id,v.trim());};
+    // Icon click: inline emoji change
+    r.querySelector('.ico-btn').onclick=e=>{e.stopPropagation();const v=prompt('Emoji:',cat.icon||'🌟');if(v&&v.trim())changeCatIcon(cat.id,v.trim());};
+    // ✏️ click: inline rename
+    r.querySelector('.edit-ico').onclick=e=>{
+      e.stopPropagation();
+      const nameSpan=r.querySelector('.edit-name');
+      const inp=mk('input');inp.type='text';inp.value=cat.name;inp.className='fi';inp.style.cssText='flex:1;font-size:14px;font-weight:700;padding:2px 6px;max-width:140px';
+      nameSpan.replaceWith(inp);inp.focus();inp.select();
+      const done=()=>{const v=inp.value.trim();if(v&&v!==cat.name)renameCat(cat.id,v);const ns=mk('span');ns.className='edit-name';ns.textContent=v||cat.name;inp.replaceWith(ns);};
+      inp.addEventListener('blur',done);inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=cat.name;inp.blur();}});
+    };
     r.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delCat(cat.id);};
-    r.onclick=e=>{if(['ico-btn','edit-ico','delbtn','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;openVarSheet(cat.id,cat.name,cat.icon);};
-    sec.appendChild(r);
+    // Row click: toggle inline expansion
+    const isOpen=expandedCatIds.has(cat.id);
+    const arr=r.querySelector('.arr');
+    arr.style.cssText='display:inline-block;transition:transform .2s;cursor:pointer';
+    arr.style.transform=isOpen?'rotate(90deg)':'';
+    r.classList.add('clickable');
+    r.onclick=e=>{if(['ico-btn','edit-ico','delbtn','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle')||e.target.tagName==='INPUT')return;
+      const opening=!expandedCatIds.has(cat.id);
+      if(opening)expandedCatIds.add(cat.id);else expandedCatIds.delete(cat.id);
+      arr.style.transform=opening?'rotate(90deg)':'';
+      catExp.style.display=opening?'block':'none';
+    };
+    // Inline expansion
+    const catExp=mk('div','');
+    catExp.style.cssText=`display:${isOpen?'block':'none'};background:var(--peach-bg);border-radius:0 0 14px 14px;padding:6px 14px 14px;margin-top:-4px;margin-bottom:8px`;
+    const buildCatRows=()=>{
+      Array.from(catExp.querySelectorAll('.cer')).forEach(x=>x.remove());
+      const addTrigEl=catExp.querySelector('.cat-add-trig');
+      const entries=(M.variableEntries||[]).filter(e=>e.categoryId===cat.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+      if(!entries.length){
+        const emp=mk('div','cer');emp.style.cssText='font-size:13px;color:var(--muted);padding:8px 0';emp.textContent='Noch keine Einträge';
+        catExp.insertBefore(emp,addTrigEl||null);
+      } else {
+        entries.forEach(en=>{
+          const er=mk('div','cer');
+          er.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(200,96,32,.08);font-size:13px';
+          er.innerHTML=`<span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${fmtD(en.date)}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(en.description)||'—'}</span><span style="font-weight:700;color:var(--sub);white-space:nowrap">${fmt(en.amount)}</span><button style="background:none;border:none;font-size:12px;cursor:pointer;padding:0 2px;opacity:.4">✏️</button><button class="delbtn" style="font-size:12px">✕</button>`;
+          er.querySelectorAll('button')[0].onclick=ev=>{ev.stopPropagation();editEntry(en.id);document.getElementById('varOvl').classList.add('open');};
+          er.querySelector('.delbtn').onclick=()=>{if(en.isFix){pendingDel={id:en.id};document.getElementById('delOvl').classList.add('open');}else delEntry(en.id);};
+          catExp.insertBefore(er,addTrigEl||null);
+        });
+      }
+    };
+    // Inline add form
+    const catAddTrig=mk('button','addbtn peach cat-add-trig');
+    catAddTrig.style.cssText='width:100%;margin-top:10px;font-size:13px';catAddTrig.textContent='+ Eintrag hinzufügen';
+    const catAddForm=mk('div','');
+    catAddForm.style.cssText='display:none;background:white;border-radius:10px;padding:12px;margin-top:8px';
+    catAddForm.innerHTML=`<div class="frow"><input class="fi fi-h" type="text" placeholder="Betrag (€)" id="camt_${cat.id}"><input class="fi fi-h" type="date" id="cdat_${cat.id}"></div><input class="fi" placeholder="Beschreibung (optional)" id="cdesc_${cat.id}" style="margin-bottom:8px"><div class="frow" style="margin:0"><button id="csave_${cat.id}" class="bsave" style="background:linear-gradient(135deg,var(--peach-dk),var(--coral-dk))">Speichern</button><button id="ccanc_${cat.id}" class="bcanc">Abbrechen</button></div>`;
+    catAddForm.querySelector(`#cdat_${cat.id}`).value=today();
+    catAddTrig.onclick=()=>{catAddForm.style.display=catAddForm.style.display==='none'?'block':'none';if(catAddForm.style.display==='block')catAddForm.querySelector(`#camt_${cat.id}`).focus();};
+    catAddForm.querySelector(`#ccanc_${cat.id}`).onclick=()=>catAddForm.style.display='none';
+    catAddForm.querySelector(`#csave_${cat.id}`).onclick=async()=>{
+      const a=parseAmt(catAddForm.querySelector(`#camt_${cat.id}`).value);
+      const dt=catAddForm.querySelector(`#cdat_${cat.id}`).value||today();
+      const d=catAddForm.querySelector(`#cdesc_${cat.id}`).value.trim();
+      if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
+      M.variableEntries=M.variableEntries||[];
+      M.variableEntries.push({id:uid(),categoryId:cat.id,amount:a,date:dt,description:d,isFix:false,isEin:false});
+      catAddForm.style.display='none';catAddForm.querySelector(`#camt_${cat.id}`).value='';catAddForm.querySelector(`#cdesc_${cat.id}`).value='';
+      await save();buildCatRows();render();
+    };
+    catExp.appendChild(catAddTrig);catExp.appendChild(catAddForm);
+    buildCatRows();
+    sec.appendChild(r);sec.appendChild(catExp);
   }
   enableDragSort(sec,'.var-row',(from,to)=>{
     const[cx]=S.categories.splice(from,1);S.categories.splice(to,0,cx);
