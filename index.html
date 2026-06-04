@@ -750,14 +750,21 @@ function attachAccordion(fc,row,sec){
   const isOpen=expandedFxIds.has(fc.id);
   const exp=mk('div','');
   exp.style.cssText=`display:${isOpen?'block':'none'};background:var(--lav-bg);border-radius:0 0 14px 14px;padding:6px 14px 14px;margin-top:-4px;margin-bottom:8px`;
-  row.querySelector('.amt-in')?.addEventListener('click',e=>e.stopPropagation());
   row.classList.add('clickable');
   row.onclick=e=>{
-    if(['sdot','delbtn','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;
+    if(['sdot','delbtn','drag-handle','edit-ico'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;
     const opening=!expandedFxIds.has(fc.id);
     if(opening)expandedFxIds.add(fc.id);else expandedFxIds.delete(fc.id);
     exp.style.display=opening?'block':'none';
   };
+  // For items with no subs, add amount editor at top of expansion
+  if(!fc.subs||fc.subs.length===0){
+    const amtRow=mk('div','');
+    amtRow.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0 10px;border-bottom:1px solid rgba(139,64,200,.1)';
+    amtRow.innerHTML=`<span style="font-size:13px;color:var(--sub);flex:1">Betrag</span><input type="text" class="fi" value="${fmtVal(fc.amount)}" placeholder="0,00" style="width:90px;font-size:13px;padding:5px 8px" id="fxamt_${fc.id}">`;
+    amtRow.querySelector('input').addEventListener('blur',e=>updFxAmt(fc.id,parseAmt(e.target.value)));
+    exp.appendChild(amtRow);
+  }
   const showAcc=isSavItem(fc);
   const accOpts=(S.savingsAccounts||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
   const buildSubRows=()=>{
@@ -818,12 +825,10 @@ function buildFixed(){
     const row=mk('div',`fx-row row ${st}`);
     let dotHtml=`<div class="sdot ${st}">${st==='done'?'✓':st==='partial'?'~':''}</div>`;
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
-    let amtHtml=n===0?`<input class="amt-in" type="text" value="${fmtVal(fc.amount)}" placeholder="0,00">`:
-                `<span class="ramt">${fmt(effAmt(fc))}</span>`;
-    let arrHtml=``;
+    let amtHtml=`<span class="ramt">${fmt(effAmt(fc))}</span>`;
     row.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span>${dotHtml}<span class="ico">${displayIcon}</span>
       <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
-      ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
+      ${progHtml}${amtHtml}<button class="delbtn">✕</button>`;
 
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
@@ -833,7 +838,6 @@ function buildFixed(){
 
     if(n===0){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
-      row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
       sec.appendChild(row);
     } else {
       if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
@@ -896,13 +900,11 @@ function buildSparen(){
     const row=mk('div',`fx-row row ${st}`);
     let dotHtml=`<div class="sdot ${st}">${st==='done'?'✓':st==='partial'?'~':''}</div>`;
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
-    let amtHtml=n===0?`<input class="amt-in" type="text" value="${fmtVal(fc.amount)}" placeholder="0,00">`:
-                `<span class="ramt">${fmt(effAmt(fc))}</span>`;
-    let arrHtml=``;
+    let amtHtml=`<span class="ramt">${fmt(effAmt(fc))}</span>`;
     const savIcon=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
     row.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span>${dotHtml}<span class="ico">${savIcon}</span>
       <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
-      ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
+      ${progHtml}${amtHtml}<button class="delbtn">✕</button>`;
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
     editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
@@ -910,7 +912,6 @@ function buildSparen(){
     if(n===0) dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
     else if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
     else dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
-    row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
     attachAccordion(fc,row,sec);
   }
   enableDragSort(sec,'.fx-row',(from,to)=>{
