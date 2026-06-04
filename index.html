@@ -323,33 +323,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span class="stotal" id="varTotal"></span>
       <button class="xbtn" id="closeVar">&#x2715;</button>
     </div>
-    <div class="sbody" id="varBody"></div>
-    <div class="sfoot">
+    <div class="sfoot" style="border-bottom:1px solid var(--border);border-top:none">
       <button class="addbtn peach" id="varAddTrig">&#43; Eintrag hinzufügen</button>
-    </div>
-  </div>
-</div>
-
-<!-- VARIABLE ENTRY FORM OVERLAY -->
-<div class="overlay" id="varEntryOvl">
-  <div class="sheet" style="max-height:55vh">
-    <div class="shandle"></div>
-    <div class="shd"><span class="stitle" id="varEntryTitle">Eintrag hinzufügen</span><button class="xbtn" id="closeVarEntry">&#x2715;</button></div>
-    <div class="sform fpeach" style="display:block;padding:20px">
-      <div class="frow">
-        <input class="fi fi-h" type="text" id="eAmt" placeholder="Betrag (€)">
-        <input class="fi fi-h" type="date" id="eDate">
-      </div>
-      <input class="fi" id="eDesc" placeholder="Beschreibung (optional)" autocomplete="off" style="margin-bottom:8px">
-      <div class="chips" style="margin-bottom:12px">
-        <div class="chip" id="chipFix">🔄 Wiederholt sich</div>
-        <div class="chip" id="chipEin">💫 Einmalausgabe</div>
-      </div>
-      <div class="frow" style="margin:0">
-        <button class="bsave" id="saveEntry">Speichern</button>
-        <button class="bcanc" id="cancEntry">Abbrechen</button>
+      <div class="sform fpeach" id="varForm">
+        <div class="frow">
+          <input class="fi fi-h" type="text" id="eAmt" placeholder="Betrag (€)">
+          <input class="fi fi-h" type="date" id="eDate">
+        </div>
+        <input class="fi" id="eDesc" placeholder="Beschreibung (optional)" autocomplete="off" style="margin-bottom:8px">
+        <div class="chips" style="margin-bottom:12px">
+          <div class="chip" id="chipFix">🔄 Wiederholt sich</div>
+          <div class="chip" id="chipEin">💫 Einmalausgabe</div>
+        </div>
+        <div class="frow" style="margin:0">
+          <button class="bsave" id="saveEntry">Speichern</button>
+          <button class="bcanc" id="cancEntry">Abbrechen</button>
+        </div>
       </div>
     </div>
+    <div class="sbody" id="varBody"></div>
   </div>
 </div>
 
@@ -620,7 +612,7 @@ async function undoLast(){
 function showF(id,show){const f=document.getElementById(id);if(f)f.style.display=show?'block':'none';}
 function parseAmt(v){return parseFloat((v||'').replace(',','.'))||0;}
 function fmtVal(n){return(n!=null&&n!=='')?String(n).replace('.',','):'';}
-function closeAllSheets(){['fxOvl','varOvl','varEntryOvl','manOvl','sondOvl','seinOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
+function closeAllSheets(){showF('varForm',false);['fxOvl','varOvl','manOvl','sondOvl','seinOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
 
 function refreshSugg(){}
 function addSugg(v){}
@@ -1161,7 +1153,7 @@ function openVarSheet(cid,cname,cicon){
   activeCat={id:cid,name:cname,icon:cicon};
   document.getElementById('varTitle').value=`${cicon||''} ${cname}`;
   document.getElementById('eDate').value=today();document.getElementById('eAmt').value='';document.getElementById('eDesc').value='';
-  eFix=eEin=false;updChips();document.getElementById('varEntryOvl').classList.remove('open');renderVarBody();
+  eFix=eEin=false;updChips();showF('varForm',false);renderVarBody();
   document.getElementById('varOvl').classList.add('open');
 }
 function renderVarBody(){
@@ -1194,15 +1186,14 @@ function editEntry(id){
   document.getElementById('eDate').value=e.date||today();
   eFix=!!e.isFix;eEin=!!e.isEin;updChips();
   document.getElementById('saveEntry').textContent='Ändern';
-  document.getElementById('varEntryTitle').textContent='✏️ Eintrag bearbeiten';
-  document.getElementById('varEntryOvl').classList.add('open');document.getElementById('eAmt').focus();
+  showF('varForm',true);document.getElementById('eAmt').focus();
 }
 function resetVarForm(){
   editingEntryId=null;
   document.getElementById('saveEntry').textContent='Speichern';
-  document.getElementById('varEntryTitle').textContent='Eintrag hinzufügen';
+
   document.getElementById('eAmt').value='';document.getElementById('eDesc').value='';document.getElementById('eDate').value=today();
-  eFix=eEin=false;updChips();document.getElementById('varEntryOvl').classList.remove('open');
+  eFix=eEin=false;updChips();showF('varForm',false);
 }
 async function saveEntry(){
   const a=parseAmt(document.getElementById('eAmt').value),dt=document.getElementById('eDate').value||today(),d=document.getElementById('eDesc').value.trim();
@@ -1675,17 +1666,15 @@ document.getElementById('closeVar').onclick=()=>document.getElementById('varOvl'
 document.getElementById('varOvl').onclick=e=>{if(e.target===document.getElementById('varOvl'))document.getElementById('varOvl').classList.remove('open');};
 document.getElementById('varTitle').addEventListener('change',async e=>{if(activeCat){await renameCat(activeCat.id,e.target.value.replace(/^[^\w]+/,'').trim());}});
 document.getElementById('varAddTrig').onclick=()=>{
-  document.getElementById('varEntryTitle').textContent='Eintrag hinzufügen';
   document.getElementById('eDate').value=today();
   document.getElementById('eAmt').value='';document.getElementById('eDesc').value='';
-  eFix=eEin=false;updChips();
-  document.getElementById('varEntryOvl').classList.add('open');
-  setTimeout(()=>document.getElementById('eAmt').focus(),100);
+  eFix=eEin=false;updChips();editingEntryId=null;
+  document.getElementById('saveEntry').textContent='Speichern';
+  showF('varForm',true);
+  setTimeout(()=>document.getElementById('eAmt').focus(),50);
 };
 document.getElementById('saveEntry').onclick=saveEntry;
 document.getElementById('cancEntry').onclick=resetVarForm;
-document.getElementById('closeVarEntry').onclick=resetVarForm;
-document.getElementById('varEntryOvl').onclick=e=>{if(e.target===document.getElementById('varEntryOvl'))resetVarForm();};
 document.getElementById('eDesc').addEventListener('keydown',e=>{if(e.key==='Enter')saveEntry();});
 document.getElementById('chipFix').onclick=()=>{eFix=!eFix;if(eFix)eEin=false;updChips();};
 document.getElementById('chipEin').onclick=()=>{eEin=!eEin;if(eEin)eFix=false;updChips();};
