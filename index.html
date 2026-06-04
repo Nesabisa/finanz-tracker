@@ -611,6 +611,7 @@ async function undoLast(){
 }
 function showF(id,show){const f=document.getElementById(id);if(f)f.style.display=show?'block':'none';}
 function parseAmt(v){return parseFloat((v||'').replace(',','.'))||0;}
+function fmtVal(n){return(n!=null&&n!=='')?String(n).replace('.',','):'';}
 function closeAllSheets(){['fxOvl','varOvl','manOvl','sondOvl','seinOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
 
 function refreshSugg(){}
@@ -735,7 +736,7 @@ function buildIncome(){
   const sec=mk('div','card');
   sec.innerHTML=`<div class="card-hd inc"><span class="ctitle">💰 Einnahmen</span><span class="ctotal" style="color:var(--mint-dk)">${fmt(totalInc())}</span></div>
     <div class="row"><span class="ico">💰</span><span class="rname">Gehalt</span>
-    <input class="sal-in" type="number" id="salIn" value="${M.salary||''}" placeholder="0,00" step="0.01" min="0"></div>`;
+    <input class="sal-in" type="text" id="salIn" value="${fmtVal(M.salary)}" placeholder="0,00"></div>`;
   const list=mk('div');
   for(const x of(M.extraIncome||[])){
     const r=mk('div','row');
@@ -744,17 +745,17 @@ function buildIncome(){
   }
   sec.appendChild(list);
   const[ab,af]=addBtn('ef','+ Extra Einnahme','rose','frose');sec.appendChild(ab);
-  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="xd" placeholder="Beschreibung"><input class="fi" type="number" id="xa" placeholder="€" step="0.01" style="width:80px"></div>
+  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="xd" placeholder="Beschreibung"><input class="fi" type="text" id="xa" placeholder="€" style="width:80px"></div>
     <div class="frow" style="margin:0"><button class="bsave" id="xs">Hinzufügen</button><button class="bcanc" id="xc">Abbrechen</button></div>`;
   sec.appendChild(af);
   const salIn=sec.querySelector('#salIn');
-  salIn.addEventListener('change',async e=>{if(!M)return;M.salary=parseFloat(e.target.value)||0;await save();});
-  salIn.addEventListener('blur',  async e=>{if(!M)return;M.salary=parseFloat(e.target.value)||0;await save();});
+  salIn.addEventListener('change',async e=>{if(!M)return;M.salary=parseAmt(e.target.value);await save();});
+  salIn.addEventListener('blur',  async e=>{if(!M)return;M.salary=parseAmt(e.target.value);await save();});
   af.querySelector('#xs').onclick=addExtra;af.querySelector('#xc').onclick=()=>showF('ef',false);
   return sec;
 }
 async function addExtra(){
-  const d=document.getElementById('xd').value.trim(),a=parseFloat(document.getElementById('xa').value);
+  const d=document.getElementById('xd').value.trim(),a=parseAmt(document.getElementById('xa').value);
   if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
   M.extraIncome.push({id:uid(),description:d||'—',amount:a});
   addSugg(d);await save();await saveSett();showF('ef',false);render();
@@ -775,7 +776,7 @@ function buildFixed(){
     const row=mk('div',`fx-row row ${st}`);
     let dotHtml=`<div class="sdot ${st}">${st==='done'?'✓':st==='partial'?'~':''}</div>`;
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
-    let amtHtml=n===0?`<input class="amt-in" type="number" value="${fc.amount||''}" placeholder="0,00" step="0.01">`:
+    let amtHtml=n===0?`<input class="amt-in" type="text" value="${fmtVal(fc.amount)}" placeholder="0,00">`:
                 `<span class="ramt">${fmt(effAmt(fc))}</span>`;
     let arrHtml=`<span class="arr">›</span>`;
     row.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span>${dotHtml}<span class="ico">${displayIcon}</span>
@@ -791,7 +792,7 @@ function buildFixed(){
     // Dot click: toggle checked state
     if(n===0){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
-      row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseFloat(e.target.value)||0);});
+      row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
     } else if(n===1){
       dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
     } else {
@@ -816,7 +817,7 @@ function buildFixed(){
     render();Promise.all([save(),saveSett()]);
   });
   const[ab,af]=addBtn('ff','+ Fixe Position hinzufügen','lav','flav');sec.appendChild(ab);
-  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="fn" placeholder="Name"><input class="fi" type="number" id="fa" placeholder="€" step="0.01" style="width:80px"></div>
+  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="fn" placeholder="Name"><input class="fi" type="text" id="fa" placeholder="€" style="width:80px"></div>
     <div class="frow" style="margin:0"><button class="bsave" id="fs">Hinzufügen</button><button class="bcanc" id="fc2">Abbrechen</button></div>`;
   // Vorlagen-Chips
   const tpls=S.fxTemplates||[];
@@ -858,7 +859,7 @@ function buildSparen(){
     const row=mk('div',`fx-row row ${st}`);
     let dotHtml=`<div class="sdot ${st}">${st==='done'?'✓':st==='partial'?'~':''}</div>`;
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
-    let amtHtml=n===0?`<input class="amt-in" type="number" value="${fc.amount||''}" placeholder="0,00" step="0.01">`:
+    let amtHtml=n===0?`<input class="amt-in" type="text" value="${fmtVal(fc.amount)}" placeholder="0,00">`:
                 `<span class="ramt">${fmt(effAmt(fc))}</span>`;
     let arrHtml=`<span class="arr">›</span>`;
     const savIcon=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
@@ -870,7 +871,7 @@ function buildSparen(){
     editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
     if(n===0){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
-      row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseFloat(e.target.value)||0);});
+      row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
     } else if(n===1){
       dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
     } else {
@@ -913,12 +914,12 @@ function renderFxBody(){
     const r=mk('div','sub-row');
     r.innerHTML=`<div class="schk${fc.checked?' done':''}">✓</div>
       <input class="sname-in" type="text" value="${esc(fc.name)}" placeholder="Name">
-      <input class="samt-in" type="number" value="${fc.amount||''}" placeholder="0,00" step="0.01">`;
+      <input class="samt-in" type="text" value="${fmtVal(fc.amount)}" placeholder="0,00">`;
     r.querySelector('.schk').onclick=()=>toggleFxDirect(fc.id);
     const ni=r.querySelector('.sname-in');
     ni.addEventListener('change',e=>{if(e.target.value.trim())renameFx(fc.id,e.target.value.trim());});
     ni.addEventListener('blur',e=>{if(e.target.value.trim())renameFx(fc.id,e.target.value.trim());});
-    r.querySelector('.samt-in').addEventListener('change',e=>updFxAmt(fc.id,parseFloat(e.target.value)||0));
+    r.querySelector('.samt-in').addEventListener('change',e=>updFxAmt(fc.id,parseAmt(e.target.value)));
     body.appendChild(r);
   } else {
     for(const si of fc.subs){
@@ -927,14 +928,14 @@ function renderFxBody(){
       const showAccSel=(fc.id==='sparen'||fc.id==='sparkasse'||si.accId);
       r.innerHTML=`<div class="schk${si.checked?' done':''}">✓</div>
         <input class="sname-in" type="text" value="${esc(si.name)}" placeholder="Name">
-        <input class="samt-in" type="number" value="${si.amount||''}" placeholder="€" step="0.01">
+        <input class="samt-in" type="text" value="${fmtVal(si.amount)}" placeholder="€">
         ${showAccSel?`<select class="sacc-sel"><option value="">— Konto —</option>${accOpts}</select>`:''}
         <button class="delbtn" style="font-size:12px">✕</button>`;
       r.querySelector('.schk').onclick=()=>toggleSub(fc.id,si.id);
       const nameIn=r.querySelector('.sname-in');
       nameIn.addEventListener('change',e=>updSubName(fc.id,si.id,e.target.value));
       nameIn.addEventListener('blur',e=>updSubName(fc.id,si.id,e.target.value));
-      r.querySelector('.samt-in').addEventListener('change',e=>updSubAmt(fc.id,si.id,parseFloat(e.target.value)||0));
+      r.querySelector('.samt-in').addEventListener('change',e=>updSubAmt(fc.id,si.id,parseAmt(e.target.value)));
       r.querySelector('.delbtn').onclick=()=>delSub(fc.id,si.id);
       const sel=r.querySelector('.sacc-sel');
       if(sel)sel.addEventListener('change',e=>updSubAccId(fc.id,si.id,e.target.value));
@@ -1071,7 +1072,7 @@ async function delFx(id){
   catch(e){console.error('delFx:',e);snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function addFx(){
-  const n=document.getElementById('fn').value.trim(),a=parseFloat(document.getElementById('fa').value)||0;
+  const n=document.getElementById('fn').value.trim(),a=parseAmt(document.getElementById('fa').value);
   if(!n){snack('Bitte Namen eingeben');return;}
   const id=uid();
   const tpl=selectedFxTplId?(S.fxTemplates||[]).find(t=>t.id===selectedFxTplId):null;
@@ -1180,7 +1181,7 @@ function updChips(){document.getElementById('chipFix').className='chip'+(eFix?' 
 function editEntry(id){
   const e=M.variableEntries.find(x=>x.id===id);if(!e)return;
   editingEntryId=id;
-  document.getElementById('eAmt').value=e.amount||'';
+  document.getElementById('eAmt').value=fmtVal(e.amount);
   document.getElementById('eDesc').value=e.description||'';
   document.getElementById('eDate').value=e.date||today();
   eFix=!!e.isFix;eEin=!!e.isEin;updChips();
@@ -1342,10 +1343,10 @@ async function buildSavingsPage(){
       <div class="acc-bal">${fmt(bal)}</div>
       <div class="acc-meta">Startguthaben + ${fmt(deps+mans+seins)} eingezahlt · ${fmt(wds)} ausgegeben</div>
       <div class="acc-start-row"><span class="acc-start-lbl">Startguthaben:</span>
-      <input class="acc-start-in" type="number" value="${acc.startingBalance||''}" placeholder="0,00" step="0.01" data-accid="${acc.id}"></div>`;
+      <input class="acc-start-in" type="text" value="${fmtVal(acc.startingBalance)}" placeholder="0,00" data-accid="${acc.id}"></div>`;
     card.querySelector('.acc-add-btn').onclick=()=>{manAccId=acc.id;document.getElementById('manTitle').textContent=`${acc.icon||''} ${acc.name}: Betrag hinzufügen`;document.getElementById('manDate').value=today();document.getElementById('manAmt').value='';document.getElementById('manDesc').value='';document.getElementById('manOvl').classList.add('open');};
     card.querySelector('.acc-del-btn').onclick=()=>delSavAcc(acc.id);
-    card.querySelector('.acc-start-in').addEventListener('change',async e=>{acc.startingBalance=parseFloat(e.target.value)||0;await saveSett();buildSavingsPage();});
+    card.querySelector('.acc-start-in').addEventListener('change',async e=>{acc.startingBalance=parseAmt(e.target.value);await saveSett();buildSavingsPage();});
     c.appendChild(card);
   });
 
