@@ -910,15 +910,11 @@ function buildSparen(){
     const editIco=row.querySelector('.edit-ico');
     editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
-    if(n===0){
-      dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
-      row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
-      sec.appendChild(row);
-    } else {
-      if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
-      else dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
-      attachAccordion(fc,row,sec);
-    }
+    if(n===0) dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
+    else if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
+    else dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
+    row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
+    attachAccordion(fc,row,sec);
   }
   enableDragSort(sec,'.fx-row',(from,to)=>{
     // drag-sort within savings items only
