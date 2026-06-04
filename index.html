@@ -744,6 +744,68 @@ async function addExtra(){
 }
 async function delExtra(id){M.extraIncome=M.extraIncome.filter(e=>e.id!==id);await save();render();}
 
+// Shared accordion helper for fixed cost items with sub-items
+function attachAccordion(fc,row,sec){
+  const isOpen=expandedFxIds.has(fc.id);
+  const arr=row.querySelector('.arr');
+  arr.style.cssText='display:inline-block;transition:transform .2s;cursor:pointer';
+  arr.style.transform=isOpen?'rotate(90deg)':'';
+  row.classList.add('clickable');
+  const exp=mk('div','');
+  exp.style.cssText=`display:${isOpen?'block':'none'};background:var(--lav-bg);border-radius:0 0 14px 14px;padding:6px 14px 14px;margin-top:-4px;margin-bottom:8px`;
+  row.onclick=e=>{
+    if(['sdot','delbtn','edit-ico','drag-handle','fi'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle')||e.target.tagName==='INPUT')return;
+    const opening=!expandedFxIds.has(fc.id);
+    if(opening)expandedFxIds.add(fc.id);else expandedFxIds.delete(fc.id);
+    arr.style.transform=opening?'rotate(90deg)':'';
+    exp.style.display=opening?'block':'none';
+  };
+  const showAcc=isSavItem(fc);
+  const accOpts=(S.savingsAccounts||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  const buildSubRows=()=>{
+    Array.from(exp.querySelectorAll('.isr')).forEach(r=>r.remove());
+    const addTrig=exp.querySelector('.add-trig');
+    (fc.subs||[]).forEach(si=>{
+      const sr=mk('div','isr');
+      sr.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(139,64,200,.07)';
+      const schkEl=mk('div',`schk${si.checked?' done':''}`);
+      schkEl.style.cssText='width:22px;height:22px;flex-shrink:0;font-size:12px';schkEl.textContent='✓';
+      const nameIn=mk('input');nameIn.type='text';nameIn.value=si.name;nameIn.className='fi';nameIn.style.cssText='flex:1;font-size:13px;padding:5px 8px;min-width:0';
+      const amtIn=mk('input');amtIn.type='text';amtIn.value=fmtVal(si.amount);amtIn.className='fi';amtIn.style.cssText='width:68px;font-size:13px;padding:5px 8px;flex-shrink:0';
+      const delB=mk('button');delB.className='delbtn';delB.textContent='✕';delB.style.flexShrink='0';
+      schkEl.onclick=async e=>{e.stopPropagation();await toggleSub(fc.id,si.id);render();};
+      nameIn.addEventListener('blur',e=>{if(e.target.value.trim())updSubName(fc.id,si.id,e.target.value.trim());});
+      amtIn.addEventListener('blur',e=>updSubAmt(fc.id,si.id,parseAmt(e.target.value)));
+      delB.onclick=e=>{e.stopPropagation();delSub(fc.id,si.id);};
+      sr.appendChild(schkEl);sr.appendChild(nameIn);sr.appendChild(amtIn);sr.appendChild(delB);
+      exp.insertBefore(sr,addTrig||null);
+    });
+  };
+  const addTrig=mk('button','addbtn lav add-trig');
+  addTrig.style.cssText='width:100%;margin-top:10px;font-size:13px';addTrig.textContent='+ Unterposten hinzufügen';
+  const addForm=mk('div','');
+  addForm.style.cssText='display:none;background:white;border-radius:10px;padding:12px;margin-top:8px';
+  addForm.innerHTML=`<div class="frow"><input class="fi fi-h" placeholder="Name" id="isn_${fc.id}"><input class="fi" type="text" placeholder="€" style="width:80px" id="isa_${fc.id}"></div>${showAcc?`<div class="frow"><select class="fi" id="isacc_${fc.id}"><option value="">— Konto —</option>${accOpts}</select></div>`:''}<div class="frow" style="margin:0"><button id="iss_${fc.id}" class="bsave">Hinzufügen</button><button id="isc_${fc.id}" class="bcanc">Abbrechen</button></div>`;
+  addTrig.onclick=()=>{addForm.style.display=addForm.style.display==='none'?'block':'none';if(addForm.style.display==='block')addForm.querySelector(`#isn_${fc.id}`).focus();};
+  addForm.querySelector(`#isc_${fc.id}`).onclick=()=>addForm.style.display='none';
+  addForm.querySelector(`#iss_${fc.id}`).onclick=async()=>{
+    const nm=addForm.querySelector(`#isn_${fc.id}`).value.trim();
+    const am=parseAmt(addForm.querySelector(`#isa_${fc.id}`).value);
+    const acId=showAcc?(addForm.querySelector(`#isacc_${fc.id}`)?.value||''):'';
+    if(!nm){snack('Bitte Name eingeben');return;}
+    const nid=uid();
+    if(!fc.subs)fc.subs=[];
+    fc.subs.push({id:nid,name:nm,amount:am,checked:false,paidDate:null,accId:acId});
+    const sf=S.fixedCosts.find(f=>f.id===fc.id);if(sf){if(!sf.subs)sf.subs=[];sf.subs.push({id:nid,name:nm,def:am,accId:acId});}
+    addForm.style.display='none';addForm.querySelector(`#isn_${fc.id}`).value='';addForm.querySelector(`#isa_${fc.id}`).value='';
+    await Promise.all([save(),saveSett()]);
+    buildSubRows();render();
+  };
+  exp.appendChild(addTrig);exp.appendChild(addForm);
+  buildSubRows();
+  sec.appendChild(row);sec.appendChild(exp);
+}
+
 // Fixed section
 function buildFixed(){
   const sec=mk('div','card');
@@ -776,76 +838,10 @@ function buildFixed(){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
       row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
       sec.appendChild(row);
-    } else if(n===1){
-      dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
-      sec.appendChild(row);
     } else {
-      // Multiple subs: row click toggles inline expansion
-      dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
-      const isOpen=expandedFxIds.has(fc.id);
-      const arr=row.querySelector('.arr');
-      arr.style.cssText='display:inline-block;transition:transform .2s;cursor:pointer';
-      arr.style.transform=isOpen?'rotate(90deg)':'';
-      row.classList.add('clickable');
-      row.onclick=e=>{
-        if(['sdot','delbtn','edit-ico','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;
-        const opening=!expandedFxIds.has(fc.id);
-        if(opening)expandedFxIds.add(fc.id);else expandedFxIds.delete(fc.id);
-        arr.style.transform=opening?'rotate(90deg)':'';
-        exp.style.display=opening?'block':'none';
-      };
-
-      // Inline expansion
-      const exp=mk('div','');
-      exp.style.cssText=`display:${isOpen?'block':'none'};background:var(--lav-bg);border-radius:0 0 14px 14px;padding:6px 14px 14px;margin-top:-4px;margin-bottom:8px`;
-
-      const buildSubRows=()=>{
-        // Remove old rows (keep add button at end)
-        Array.from(exp.querySelectorAll('.isr')).forEach(r=>r.remove());
-        const addTrig=exp.querySelector('.add-trig');
-        fc.subs.forEach(si=>{
-          const sr=mk('div','isr');
-          sr.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(139,64,200,.07)';
-          const schkEl=mk('div',`schk${si.checked?' done':''}`);
-          schkEl.style.cssText='width:22px;height:22px;flex-shrink:0;font-size:12px';schkEl.textContent='✓';
-          const nameIn=mk('input');nameIn.type='text';nameIn.value=si.name;nameIn.className='fi';nameIn.style.cssText='flex:1;font-size:13px;padding:5px 8px;min-width:0';
-          const amtIn=mk('input');amtIn.type='text';amtIn.value=fmtVal(si.amount);amtIn.className='fi';amtIn.style.cssText='width:68px;font-size:13px;padding:5px 8px;flex-shrink:0';
-          const delB=mk('button');delB.className='delbtn';delB.textContent='✕';delB.style.flexShrink='0';
-          schkEl.onclick=async()=>{await toggleSub(fc.id,si.id);render();};
-          nameIn.addEventListener('blur',e=>{if(e.target.value.trim())updSubName(fc.id,si.id,e.target.value.trim());});
-          amtIn.addEventListener('blur',e=>updSubAmt(fc.id,si.id,parseAmt(e.target.value)));
-          delB.onclick=e=>{e.stopPropagation();delSub(fc.id,si.id);};
-          sr.appendChild(schkEl);sr.appendChild(nameIn);sr.appendChild(amtIn);sr.appendChild(delB);
-          exp.insertBefore(sr,addTrig||null);
-        });
-      };
-
-      // Add button + form
-      const addTrig=mk('button','addbtn lav add-trig');
-      addTrig.style.cssText='width:100%;margin-top:10px;font-size:13px';addTrig.textContent='+ Unterposten hinzufügen';
-      const addForm=mk('div','');
-      addForm.style.cssText='display:none;background:white;border-radius:10px;padding:12px;margin-top:8px';
-      const showAcc=isSavItem(fc);
-      const accOpts=(S.savingsAccounts||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
-      addForm.innerHTML=`<div class="frow"><input class="fi fi-h" placeholder="Name" id="isn_${fc.id}"><input class="fi" type="text" placeholder="€" style="width:80px" id="isa_${fc.id}"></div>${showAcc?`<div class="frow"><select class="fi" id="isacc_${fc.id}"><option value="">— Konto —</option>${accOpts}</select></div>`:''}<div class="frow" style="margin:0"><button id="iss_${fc.id}" class="bsave">Hinzufügen</button><button id="isc_${fc.id}" class="bcanc">Abbrechen</button></div>`;
-      addTrig.onclick=()=>{addForm.style.display=addForm.style.display==='none'?'block':'none';if(addForm.style.display==='block')addForm.querySelector(`#isn_${fc.id}`).focus();};
-      addForm.querySelector(`#isc_${fc.id}`).onclick=()=>addForm.style.display='none';
-      addForm.querySelector(`#iss_${fc.id}`).onclick=async()=>{
-        const nm=addForm.querySelector(`#isn_${fc.id}`).value.trim();
-        const am=parseAmt(addForm.querySelector(`#isa_${fc.id}`).value);
-        const acId=showAcc?(addForm.querySelector(`#isacc_${fc.id}`)?.value||''):'';
-        if(!nm){snack('Bitte Name eingeben');return;}
-        const nid=uid();
-        fc.subs.push({id:nid,name:nm,amount:am,checked:false,paidDate:null,accId:acId});
-        const sf=S.fixedCosts.find(f=>f.id===fc.id);if(sf){sf.subs=sf.subs||[];sf.subs.push({id:nid,name:nm,def:am,accId:acId});}
-        addForm.style.display='none';addForm.querySelector(`#isn_${fc.id}`).value='';addForm.querySelector(`#isa_${fc.id}`).value='';
-        await Promise.all([save(),saveSett()]);
-        buildSubRows(); // rebuild inline without full render
-        render(); // update totals
-      };
-      exp.appendChild(addTrig);exp.appendChild(addForm);
-      buildSubRows();
-      sec.appendChild(row);sec.appendChild(exp);
+      if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
+      else dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
+      attachAccordion(fc,row,sec);
     }
   }
   enableDragSort(sec,'.fx-row',(from,to)=>{
@@ -913,18 +909,16 @@ function buildSparen(){
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
     editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
+    row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
     if(n===0){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
       row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
-    } else if(n===1){
-      dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
+      sec.appendChild(row);
     } else {
-      dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
+      if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
+      else dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
+      attachAccordion(fc,row,sec);
     }
-    row.classList.add('clickable');
-    row.onclick=e=>{if(['sdot','delbtn','amt-in','edit-ico','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;openFxSheet(fc.id);};
-    row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
-    sec.appendChild(row);
   }
   enableDragSort(sec,'.fx-row',(from,to)=>{
     // drag-sort within savings items only
