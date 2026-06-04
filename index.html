@@ -255,7 +255,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="sumgrid">
       <div class="scard"><div class="slbl">Einnahmen</div><div class="sval" id="sInc">€0</div></div>
-      <div class="scard"><div class="slbl">Ausgaben</div><div class="sval" id="sExp">€0</div><div style="font-size:11px;color:var(--sub);margin-top:2px" id="sSavLbl"></div></div>
+      <div class="scard"><div class="slbl">Ausgaben</div><div class="sval" id="sExp">€0</div></div>
       <div class="scard"><div class="slbl">Übrig</div><div class="sval" id="sBal">€0</div></div>
     </div>
   </div>
@@ -663,7 +663,7 @@ function updateSum(){
   const i=totalInc(),e=totalExp(),sav=totalSav(),b=i-e;
   document.getElementById('sInc').textContent=fmt(i);
   document.getElementById('sExp').textContent=fmt(e);
-  const sl=document.getElementById('sSavLbl');if(sl)sl.textContent=sav>0?`davon Sparen ${fmt(sav)}`:'';
+
   const el=document.getElementById('sBal');el.textContent=fmt(b);el.className='sval '+(b>=0?'pos':'neg');
 }
 
@@ -1286,28 +1286,13 @@ async function buildStats(){
     });
     return items;
   }));
-  if(!SAV)await loadSavings();
-  {
-    const regularSav=allMonths.reduce((s,m)=>s+(m.data.fixedCosts||[]).filter(isSavItem).reduce((ss,fc)=>ss+effAmt(fc),0),0);
-    const sondEin=(SAV?.specialIncome||[]).reduce((s,d)=>s+(d.amount||0),0);
-    const sondAus=(SAV?.withdrawals||[]).reduce((s,w)=>s+(w.amount||0),0);
-    const netSav=regularSav+sondEin-sondAus;
-    const savBlock=mk('div','expand-block');
-    const savHd=mk('div','exp-hd');
-    savHd.innerHTML=`<span class="exp-title">🌱 Sparen (Gesamt)</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:700">${fmt(netSav)}</span><span class="exp-ico">›</span></div>`;
-    const savBody=mk('div','exp-body');
-    const rows=[['🌱 Monatliches Sparen',regularSav,1],['✨ Sondereinnahmen',sondEin,1],['💸 Sonderausgaben',sondAus,-1]];
-    const maxV=Math.max(...rows.map(([,v])=>v),1);
-    rows.forEach(([name,amt,sign])=>{
-      if(!amt)return;
-      const r=mk('div','bar-row');
-      r.innerHTML=`<span class="bar-lbl">${name}</span><div class="bar-bg"><div class="bar-fill sun" style="width:${Math.round(amt/maxV*100)}%"></div></div><span class="bar-val" style="${sign<0?'color:var(--coral-dk)':''}">${sign<0?'-':''}${fmt(amt)}</span>`;
-      savBody.appendChild(r);
+  c.appendChild(buildStatsBlock('🌱 Sparen (Gesamt)','sun',allMonths,m=>{
+    const items={};
+    (m.data.fixedCosts||[]).filter(isSavItem).forEach(fc=>{
+      const a=effAmt(fc);if(a)items['🌱 Sparen']=(items['🌱 Sparen']||0)+a;
     });
-    if(!savBody.children.length)savBody.innerHTML='<div class="empty-hint">Keine Daten</div>';
-    savHd.onclick=()=>{savBody.classList.toggle('open');savHd.querySelector('.exp-ico').classList.toggle('open');};
-    savBlock.appendChild(savHd);savBlock.appendChild(savBody);c.appendChild(savBlock);
-  }
+    return items;
+  }));
   // Variable Breakdown (gesamt)
   c.appendChild(buildStatsBlock('💳 Variable Ausgaben (Gesamt)','peach',allMonths,m=>{
     const items={};
@@ -1668,7 +1653,7 @@ document.getElementById('fxAddSubTrig').onclick=()=>{
   showF('fxAddForm',!showing);
   if(!showing){
     document.getElementById('subName').focus();
-    setTimeout(()=>{const b=document.getElementById('fxBody');if(b)b.scrollTop=b.scrollHeight;},60);
+    setTimeout(()=>{const b=document.getElementById('fxBody');if(b)b.scrollTop=0;},60);
   }
 };
 document.getElementById('subSave').onclick=addSub;
@@ -1685,7 +1670,7 @@ document.getElementById('varAddTrig').onclick=()=>{
   showF('varForm',opening);
   if(opening){
     document.getElementById('eAmt').focus();
-    setTimeout(()=>{const b=document.getElementById('varBody');if(b)b.scrollTop=b.scrollHeight;},60);
+    setTimeout(()=>{const b=document.getElementById('varBody');if(b)b.scrollTop=0;},60);
   }
 };
 document.getElementById('saveEntry').onclick=saveEntry;document.getElementById('cancEntry').onclick=resetVarForm;
