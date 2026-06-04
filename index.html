@@ -934,19 +934,17 @@ function renderFxBody(){
       <button id="fxAddSubTrig" class="addbtn lav" style="flex:1">&#43; Unterposten hinzufügen</button>
       <button id="saveFxTplBtn" class="addbtn lav" style="width:auto;flex-shrink:0;font-size:13px;padding:10px 14px">💾 Vorlage</button>
     </div>
-    <div id="fxAddForm" style="display:none">
-      <div class="sform flav" style="margin-top:8px">
-        <div class="frow">
-          <input class="fi fi-h" id="subName" placeholder="Name">
-          <input class="fi" type="text" id="subAmt" placeholder="€" style="width:80px">
-        </div>
-        <div class="frow" id="subAccRow" style="${isAccFx?'':'display:none'}">
-          <select class="fi" id="subAccSel" style="flex:1"><option value="">— Konto —</option>${accOpts2}</select>
-        </div>
-        <div class="frow" style="margin:0">
-          <button class="bsave" id="subSave">Hinzufügen</button>
-          <button class="bcanc" id="subCanc">Abbrechen</button>
-        </div>
+    <div id="fxAddForm" class="flav" style="display:none;padding:14px;border-radius:12px;margin-top:8px">
+      <div class="frow">
+        <input class="fi fi-h" id="subName" placeholder="Name">
+        <input class="fi" type="text" id="subAmt" placeholder="€" style="width:80px">
+      </div>
+      <div class="frow" id="subAccRow" style="${isAccFx?'':'display:none'}">
+        <select class="fi" id="subAccSel" style="flex:1"><option value="">— Konto —</option>${accOpts2}</select>
+      </div>
+      <div class="frow" style="margin:0">
+        <button class="bsave" id="subSave">Hinzufügen</button>
+        <button class="bcanc" id="subCanc">Abbrechen</button>
       </div>
     </div>`;
   body.appendChild(addWrap);
