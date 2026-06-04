@@ -748,17 +748,14 @@ async function delExtra(id){M.extraIncome=M.extraIncome.filter(e=>e.id!==id);awa
 // Shared accordion helper for fixed cost items with sub-items
 function attachAccordion(fc,row,sec){
   const isOpen=expandedFxIds.has(fc.id);
-  const arr=row.querySelector('.arr');
-  arr.style.cssText='display:inline-block;transition:transform .2s;cursor:pointer';
-  arr.style.transform=isOpen?'rotate(90deg)':'';
-  row.classList.add('clickable');
   const exp=mk('div','');
   exp.style.cssText=`display:${isOpen?'block':'none'};background:var(--lav-bg);border-radius:0 0 14px 14px;padding:6px 14px 14px;margin-top:-4px;margin-bottom:8px`;
+  row.querySelector('.amt-in')?.addEventListener('click',e=>e.stopPropagation());
+  row.classList.add('clickable');
   row.onclick=e=>{
-    if(['sdot','delbtn','edit-ico','drag-handle','fi'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle')||e.target.tagName==='INPUT')return;
+    if(['sdot','delbtn','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;
     const opening=!expandedFxIds.has(fc.id);
     if(opening)expandedFxIds.add(fc.id);else expandedFxIds.delete(fc.id);
-    arr.style.transform=opening?'rotate(90deg)':'';
     exp.style.display=opening?'block':'none';
   };
   const showAcc=isSavItem(fc);
@@ -823,7 +820,7 @@ function buildFixed(){
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
     let amtHtml=n===0?`<input class="amt-in" type="text" value="${fmtVal(fc.amount)}" placeholder="0,00">`:
                 `<span class="ramt">${fmt(effAmt(fc))}</span>`;
-    let arrHtml=`<span class="arr">›</span>`;
+    let arrHtml=``;
     row.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span>${dotHtml}<span class="ico">${displayIcon}</span>
       <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
       ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
@@ -901,7 +898,7 @@ function buildSparen(){
     let progHtml=n>1?`<span class="prog">${fc.subs.filter(s=>s.checked).length}/${n}</span>`:'';
     let amtHtml=n===0?`<input class="amt-in" type="text" value="${fmtVal(fc.amount)}" placeholder="0,00">`:
                 `<span class="ramt">${fmt(effAmt(fc))}</span>`;
-    let arrHtml=`<span class="arr">›</span>`;
+    let arrHtml=``;
     const savIcon=fc.icon&&fc.icon!=='🏷️'?fc.icon:autoIcon(fc.name);
     row.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span>${dotHtml}<span class="ico">${savIcon}</span>
       <div class="name-wrap"><span class="edit-name">${esc(fc.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
@@ -1175,21 +1172,17 @@ function buildVariable(){
     const t=catTotal(cat.id),r=mk('div','row var-row');
     r.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span><span class="ico ico-btn" title="Icon ändern">${cat.icon||'🌟'}</span>
       <div class="name-wrap"><span class="edit-name">${esc(cat.name)}</span><span class="edit-ico" title="Umbenennen">✏️</span></div>
-      <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><span class="arr">›</span><button class="delbtn">✕</button>`;
+      <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><button class="delbtn">✕</button>`;
     // Icon click: inline emoji change
     r.querySelector('.ico-btn').onclick=e=>{e.stopPropagation();const v=prompt('Emoji:',cat.icon||'🌟');if(v&&v.trim())changeCatIcon(cat.id,v.trim());};
     r.querySelector('.edit-ico').onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',cat.name);if(v&&v.trim())renameCat(cat.id,v.trim());};
     r.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delCat(cat.id);};
     // Row click: toggle inline expansion
     const isOpen=expandedCatIds.has(cat.id);
-    const arr=r.querySelector('.arr');
-    arr.style.cssText='display:inline-block;transition:transform .2s;cursor:pointer';
-    arr.style.transform=isOpen?'rotate(90deg)':'';
     r.classList.add('clickable');
-    r.onclick=e=>{if(['ico-btn','edit-ico','delbtn','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle')||e.target.tagName==='INPUT')return;
+    r.onclick=e=>{if(['ico-btn','edit-ico','delbtn','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;
       const opening=!expandedCatIds.has(cat.id);
       if(opening)expandedCatIds.add(cat.id);else expandedCatIds.delete(cat.id);
-      arr.style.transform=opening?'rotate(90deg)':'';
       catExp.style.display=opening?'block':'none';
     };
     // Inline expansion
