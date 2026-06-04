@@ -836,14 +836,10 @@ function buildFixed(){
     editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
 
-    if(n===0){
-      dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
-      sec.appendChild(row);
-    } else {
-      if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
-      else dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
-      attachAccordion(fc,row,sec);
-    }
+    if(n===0) dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
+    else if(n===1) dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
+    else dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
+    attachAccordion(fc,row,sec);
   }
   enableDragSort(sec,'.fx-row',(from,to)=>{
     // drag-sort only operates on non-savings items; remap indices into full M.fixedCosts
