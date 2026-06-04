@@ -831,15 +831,7 @@ function buildFixed(){
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
 
-    // ✏️ = inline rename (no popup)
-    editIco.onclick=e=>{
-      e.stopPropagation();
-      const nameSpan=row.querySelector('.edit-name');
-      const inp=mk('input');inp.type='text';inp.value=fc.name;inp.className='fi';inp.style.cssText='flex:1;font-size:14px;font-weight:700;padding:2px 6px;max-width:140px';
-      nameSpan.replaceWith(inp);inp.focus();inp.select();
-      const done=()=>{const v=inp.value.trim();if(v&&v!==fc.name)renameFx(fc.id,v);const ns=mk('span');ns.className='edit-name';ns.textContent=v||fc.name;inp.replaceWith(ns);};
-      inp.addEventListener('blur',done);inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=fc.name;inp.blur();}});
-    };
+    editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
 
     if(n===0){
@@ -916,14 +908,7 @@ function buildSparen(){
       ${progHtml}${amtHtml}${arrHtml}<button class="delbtn">✕</button>`;
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
-    editIco.onclick=e=>{
-      e.stopPropagation();
-      const nameSpan=row.querySelector('.edit-name');
-      const inp=mk('input');inp.type='text';inp.value=fc.name;inp.className='fi';inp.style.cssText='flex:1;font-size:14px;font-weight:700;padding:2px 6px;max-width:140px';
-      nameSpan.replaceWith(inp);inp.focus();inp.select();
-      const done=()=>{const v=inp.value.trim();if(v&&v!==fc.name)renameFx(fc.id,v);const ns=mk('span');ns.className='edit-name';ns.textContent=v||fc.name;inp.replaceWith(ns);};
-      inp.addEventListener('blur',done);inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=fc.name;inp.blur();}});
-    };
+    editIco.onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',fc.name);if(v&&v.trim())renameFx(fc.id,v.trim());};
     row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
     if(n===0){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
@@ -1197,15 +1182,7 @@ function buildVariable(){
       <span class="ramt" style="color:var(--sub)">${fmt(t)}</span><span class="arr">›</span><button class="delbtn">✕</button>`;
     // Icon click: inline emoji change
     r.querySelector('.ico-btn').onclick=e=>{e.stopPropagation();const v=prompt('Emoji:',cat.icon||'🌟');if(v&&v.trim())changeCatIcon(cat.id,v.trim());};
-    // ✏️ click: inline rename
-    r.querySelector('.edit-ico').onclick=e=>{
-      e.stopPropagation();
-      const nameSpan=r.querySelector('.edit-name');
-      const inp=mk('input');inp.type='text';inp.value=cat.name;inp.className='fi';inp.style.cssText='flex:1;font-size:14px;font-weight:700;padding:2px 6px;max-width:140px';
-      nameSpan.replaceWith(inp);inp.focus();inp.select();
-      const done=()=>{const v=inp.value.trim();if(v&&v!==cat.name)renameCat(cat.id,v);const ns=mk('span');ns.className='edit-name';ns.textContent=v||cat.name;inp.replaceWith(ns);};
-      inp.addEventListener('blur',done);inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=cat.name;inp.blur();}});
-    };
+    r.querySelector('.edit-ico').onclick=e=>{e.stopPropagation();const v=prompt('Name ändern:',cat.name);if(v&&v.trim())renameCat(cat.id,v.trim());};
     r.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delCat(cat.id);};
     // Row click: toggle inline expansion
     const isOpen=expandedCatIds.has(cat.id);
