@@ -768,70 +768,69 @@ function buildFixed(){
     const dot=row.querySelector('.sdot');
     const editIco=row.querySelector('.edit-ico');
 
-    // ✏️ opens sheet, › toggles inline expand
+    // ✏️ always opens detail sheet
     editIco.onclick=e=>{e.stopPropagation();openFxSheet(fc.id);};
-    row.querySelector('.arr').style.cssText='cursor:pointer;transition:transform .2s;display:inline-block';
+    row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
 
     if(n===0){
       dot.onclick=e=>{e.stopPropagation();toggleFxDirect(fc.id);};
       row.querySelector('.amt-in')?.addEventListener('change',e=>{e.stopPropagation();updFxAmt(fc.id,parseAmt(e.target.value));});
-      row.querySelector('.arr').onclick=e=>{e.stopPropagation();openFxSheet(fc.id);};
+      row.classList.add('clickable');
+      row.onclick=e=>{if(['sdot','delbtn','amt-in','edit-ico','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;openFxSheet(fc.id);};
+      sec.appendChild(row);
     } else if(n===1){
       dot.onclick=e=>{e.stopPropagation();toggleSub(fc.id,fc.subs[0].id);};
-      row.querySelector('.arr').onclick=e=>{e.stopPropagation();openFxSheet(fc.id);};
+      row.classList.add('clickable');
+      row.onclick=e=>{if(['sdot','delbtn','edit-ico','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;openFxSheet(fc.id);};
+      sec.appendChild(row);
     } else {
+      // Multiple subs: clicking row toggles inline expansion
       dot.onclick=e=>{e.stopPropagation();toggleAllSubs(fc.id);};
-    }
-    row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();delFx(fc.id);};
-
-    // For rows with multiple subs: › toggles inline expansion
-    if(n>1){
       const isOpen=expandedFxIds.has(fc.id);
       const arr=row.querySelector('.arr');
+      arr.style.transition='transform .2s';
+      arr.style.display='inline-block';
       arr.style.transform=isOpen?'rotate(90deg)':'';
-      arr.onclick=e=>{
-        e.stopPropagation();
-        if(expandedFxIds.has(fc.id)){expandedFxIds.delete(fc.id);}else{expandedFxIds.add(fc.id);}
-        arr.style.transform=expandedFxIds.has(fc.id)?'rotate(90deg)':'';
-        exp.style.display=expandedFxIds.has(fc.id)?'':'none';
+      row.classList.add('clickable');
+      row.onclick=e=>{
+        if(['sdot','delbtn','edit-ico','drag-handle'].some(c=>e.target.classList.contains(c))||e.target.closest('.drag-handle'))return;
+        const opening=!expandedFxIds.has(fc.id);
+        if(opening)expandedFxIds.add(fc.id);else expandedFxIds.delete(fc.id);
+        arr.style.transform=opening?'rotate(90deg)':'';
+        exp.style.display=opening?'block':'none';
       };
+      // Build expansion section
       const exp=mk('div','');
-      exp.style.cssText='background:var(--lav-bg);border-radius:0 0 12px 12px;padding:4px 12px 12px;margin-top:-6px;margin-bottom:6px';
-      exp.style.display=isOpen?'':'none';
-      // Sub-item rows
+      exp.style.cssText=`display:${isOpen?'block':'none'};background:var(--lav-bg);border-radius:0 0 12px 12px;padding:4px 14px 14px;margin-top:-4px;margin-bottom:8px`;
       for(const si of fc.subs){
         const sr=mk('div','');
-        sr.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid rgba(0,0,0,.05)';
-        sr.innerHTML=`<div class="schk${si.checked?' done':''}" style="width:22px;height:22px;font-size:12px">✓</div><span style="flex:1;font-size:13px;font-weight:500">${esc(si.name)}</span><span style="font-size:13px;font-weight:700;color:var(--sub)">${fmt(si.amount)}</span>`;
-        sr.querySelector('.schk').onclick=()=>toggleSub(fc.id,si.id);
+        sr.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(139,64,200,.08)';
+        sr.innerHTML=`<div class="schk${si.checked?' done':''}" style="width:22px;height:22px;flex-shrink:0;font-size:12px">✓</div><span style="flex:1;font-size:13px;font-weight:500">${esc(si.name)}</span><span style="font-size:13px;font-weight:700;color:var(--sub);white-space:nowrap">${fmt(si.amount)}</span>`;
+        sr.querySelector('.schk').onclick=async()=>{await toggleSub(fc.id,si.id);render();};
         exp.appendChild(sr);
       }
-      // Inline add form
       const addTrigger=mk('button','addbtn lav');
-      addTrigger.style.cssText='width:100%;margin-top:8px;font-size:13px';
+      addTrigger.style.cssText='width:100%;margin-top:10px;font-size:13px';
       addTrigger.textContent='+ Unterposten hinzufügen';
-      const addForm=mk('div','flav');
-      addForm.style.cssText='display:none;padding:10px;border-radius:10px;margin-top:6px';
-      const accOpts=(S.savingsAccounts||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+      const addForm=mk('div','');
+      addForm.style.cssText='display:none;background:white;border-radius:10px;padding:12px;margin-top:8px';
       const showAcc=isSavItem(fc);
-      addForm.innerHTML=`<div class="frow"><input class="fi fi-h" placeholder="Name" id="isubName_${fc.id}"><input class="fi" type="text" placeholder="€" style="width:80px" id="isubAmt_${fc.id}"></div>${showAcc?`<div class="frow"><select class="fi" id="isubAcc_${fc.id}"><option value="">— Konto —</option>${accOpts}</select></div>`:''}<div class="frow" style="margin:0"><button class="bsave" id="isubSave_${fc.id}">Hinzufügen</button><button class="bcanc" id="isubCanc_${fc.id}">Abbrechen</button></div>`;
-      addTrigger.onclick=()=>{addForm.style.display=addForm.style.display==='none'?'':'none';if(addForm.style.display!=='none')addForm.querySelector(`#isubName_${fc.id}`).focus();};
-      addForm.querySelector(`#isubCanc_${fc.id}`).onclick=()=>{addForm.style.display='none';};
-      addForm.querySelector(`#isubSave_${fc.id}`).onclick=async()=>{
-        const n2=addForm.querySelector(`#isubName_${fc.id}`).value.trim();
-        const a2=parseAmt(addForm.querySelector(`#isubAmt_${fc.id}`).value);
-        const accId=showAcc?(addForm.querySelector(`#isubAcc_${fc.id}`)?.value||''):'';
-        if(!n2){snack('Bitte Name eingeben');return;}
-        const id2=uid();
-        fc.subs=fc.subs||[];fc.subs.push({id:id2,name:n2,amount:a2,checked:false,paidDate:null,accId});
-        const sf=S.fixedCosts.find(f=>f.id===fc.id);if(sf){sf.subs=sf.subs||[];sf.subs.push({id:id2,name:n2,def:a2,accId});}
-        addForm.style.display='none';
+      const accOpts=(S.savingsAccounts||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+      addForm.innerHTML=`<div class="frow"><input class="fi fi-h" placeholder="Name" id="isn_${fc.id}"><input class="fi" type="text" placeholder="€" style="width:80px" id="isa_${fc.id}"></div>${showAcc?`<div class="frow"><select class="fi" id="isacc_${fc.id}"><option value="">— Konto —</option>${accOpts}</select></div>`:''}<div class="frow" style="margin:0"><button class="bsave bsave-sm" id="iss_${fc.id}">Hinzufügen</button><button class="bcanc" id="isc_${fc.id}">Abbrechen</button></div>`;
+      addTrigger.onclick=()=>{addForm.style.display=addForm.style.display==='none'?'block':'none';if(addForm.style.display==='block')addForm.querySelector(`#isn_${fc.id}`).focus();};
+      addForm.querySelector(`#isc_${fc.id}`).onclick=()=>addForm.style.display='none';
+      addForm.querySelector(`#iss_${fc.id}`).onclick=async()=>{
+        const nm=addForm.querySelector(`#isn_${fc.id}`).value.trim();
+        const am=parseAmt(addForm.querySelector(`#isa_${fc.id}`).value);
+        const acId=showAcc?(addForm.querySelector(`#isacc_${fc.id}`)?.value||''):'';
+        if(!nm){snack('Bitte Name eingeben');return;}
+        const nid=uid();
+        fc.subs.push({id:nid,name:nm,amount:am,checked:false,paidDate:null,accId:acId});
+        const sf=S.fixedCosts.find(f=>f.id===fc.id);if(sf){sf.subs=sf.subs||[];sf.subs.push({id:nid,name:nm,def:am,accId:acId});}
         await Promise.all([save(),saveSett()]);render();
       };
       exp.appendChild(addTrigger);exp.appendChild(addForm);
       sec.appendChild(row);sec.appendChild(exp);
-    } else {
-      sec.appendChild(row);
     }
   }
   enableDragSort(sec,'.fx-row',(from,to)=>{
