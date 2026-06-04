@@ -300,7 +300,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sform flav" id="fxAddForm">
         <div class="frow">
           <input class="fi fi-h" id="subName" placeholder="Name (z.B. Katzenkrankenversicherung)">
-          <input class="fi" type="number" id="subAmt" placeholder="€" step="0.01" style="width:80px">
+          <input class="fi" type="text" inputmode="decimal" id="subAmt" placeholder="€" style="width:80px">
         </div>
         <div class="frow" id="subAccRow" style="display:none">
           <select class="fi" id="subAccSel" style="flex:1"></select>
@@ -328,7 +328,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="addbtn peach" id="varAddTrig">&#43; Eintrag hinzufügen</button>
       <div class="sform fpeach" id="varForm">
         <div class="frow">
-          <input class="fi fi-h" type="number" id="eAmt" placeholder="Betrag (€)" step="0.01" min="0">
+          <input class="fi fi-h" type="text" inputmode="decimal" id="eAmt" placeholder="Betrag (€)">
           <input class="fi fi-h" type="date" id="eDate">
         </div>
         <input class="fi" id="eDesc" placeholder="Beschreibung (optional)" autocomplete="off" style="margin-bottom:8px">
@@ -352,7 +352,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="shd"><span class="stitle" id="manTitle">Betrag hinzufügen</span><button class="xbtn" id="closeMan">&#x2715;</button></div>
     <div class="sform fsun" style="display:block;padding:20px">
       <div class="frow">
-        <input class="fi fi-h" type="number" id="manAmt" placeholder="Betrag (€)" step="0.01" min="0">
+        <input class="fi fi-h" type="text" inputmode="decimal" id="manAmt" placeholder="Betrag (€)">
         <input class="fi fi-h" type="date" id="manDate">
       </div>
       <input class="fi" id="manDesc" placeholder="Beschreibung (z.B. Zinsen, Dividende)" style="margin-bottom:8px">
@@ -371,7 +371,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="shd"><span class="stitle">💸 Sonderausgabe</span><button class="xbtn" id="closeSond">&#x2715;</button></div>
     <div class="sform fcoral" style="display:block;padding:20px">
       <div class="frow">
-        <input class="fi fi-h" type="number" id="sondAmt" placeholder="Betrag (€)" step="0.01" min="0">
+        <input class="fi fi-h" type="text" inputmode="decimal" id="sondAmt" placeholder="Betrag (€)">
         <input class="fi fi-h" type="date" id="sondDate">
       </div>
       <input class="fi" id="sondDesc" placeholder="Wofür? (z.B. Neues Sofa)" style="margin-bottom:8px">
@@ -379,6 +379,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="frow" style="margin:0">
         <button class="bsave" style="background:linear-gradient(135deg,var(--coral-dk),var(--rose-dk))" id="saveSondBtn">Eintragen</button>
         <button class="bcanc" id="cancSond">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SONDEREINNAHMEN SHEET -->
+<div class="overlay" id="seinOvl">
+  <div class="sheet" style="max-height:50vh">
+    <div class="shandle"></div>
+    <div class="shd"><span class="stitle">🌱 Sondereinnahme</span><button class="xbtn" id="closeSein">&#x2715;</button></div>
+    <div class="sform fsun" style="display:block;padding:20px">
+      <div class="frow">
+        <input class="fi fi-h" type="text" inputmode="decimal" id="seinAmt" placeholder="Betrag (€)">
+        <input class="fi fi-h" type="date" id="seinDate">
+      </div>
+      <input class="fi" id="seinDesc" placeholder="Woher? (z.B. Zinsen, Dividende)" style="margin-bottom:8px">
+      <select class="fi" id="seinAcc" style="margin-bottom:8px"></select>
+      <div class="frow" style="margin:0">
+        <button class="bsave sun" id="saveSeinBtn">Eintragen</button>
+        <button class="bcanc" id="cancSein">Abbrechen</button>
       </div>
     </div>
   </div>
@@ -589,8 +609,9 @@ async function undoLast(){
   catch(e){console.error('undo:',e);snack('⚠️ Rückgängig fehlgeschlagen');}
   snack('↩ Rückgängig gemacht ✓');
 }
-function showF(id,show){const f=document.getElementById(id);if(f)f.style.display=show?'block':'none';}
-function closeAllSheets(){['fxOvl','varOvl','manOvl','sondOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
+function showF(id,show){const f=document.getElementById(id);if(f){f.style.display=show?'block':'none';if(show)setTimeout(()=>f.scrollIntoView({behavior:'smooth',block:'nearest'}),60);}}
+function parseAmt(v){return parseFloat((v||'').replace(',','.'))||0;}
+function closeAllSheets(){['fxOvl','varOvl','manOvl','sondOvl','seinOvl','delOvl','detailOvl'].forEach(id=>document.getElementById(id).classList.remove('open'));}
 
 function refreshSugg(){}
 function addSugg(v){}
@@ -1015,7 +1036,7 @@ async function updFxIcon(id,ico){
   catch(e){snack('⚠️ Speichern fehlgeschlagen');}
 }
 async function addSub(){
-  const n=document.getElementById('subName').value.trim(),a=parseFloat(document.getElementById('subAmt').value)||0;
+  const n=document.getElementById('subName').value.trim(),a=parseAmt(document.getElementById('subAmt').value);
   if(!n){snack('Bitte Namen eingeben');return;}
   const backup={m:clone(M),sav:null};
   const isAccFx=isSavItem(M.fixedCosts.find(f=>f.id===activeFxId)||{});
@@ -1175,7 +1196,7 @@ function resetVarForm(){
   eFix=eEin=false;updChips();showF('varForm',false);
 }
 async function saveEntry(){
-  const a=parseFloat(document.getElementById('eAmt').value),dt=document.getElementById('eDate').value||today(),d=document.getElementById('eDesc').value.trim();
+  const a=parseAmt(document.getElementById('eAmt').value),dt=document.getElementById('eDate').value||today(),d=document.getElementById('eDesc').value.trim();
   if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
   if(editingEntryId){
     const e=M.variableEntries.find(x=>x.id===editingEntryId);
@@ -1308,8 +1329,9 @@ async function buildSavingsPage(){
   accs.forEach((acc,i)=>{
     const deps=(SAV.deposits||[]).filter(d=>d.accountId===acc.id).reduce((s,d)=>s+(d.amount||0),0);
     const mans=(SAV.manualAdditions||[]).filter(d=>d.accountId===acc.id).reduce((s,d)=>s+(d.amount||0),0);
+    const seins=(SAV.specialIncome||[]).filter(d=>d.accountId===acc.id).reduce((s,d)=>s+(d.amount||0),0);
     const wds=(SAV.withdrawals||[]).filter(w=>w.accountId===acc.id).reduce((s,w)=>s+(w.amount||0),0);
-    const bal=(acc.startingBalance||0)+deps+mans-wds;
+    const bal=(acc.startingBalance||0)+deps+mans+seins-wds;
     const card=mk('div','acc-card');
     card.style.borderLeftColor=ACC_COLORS[i%ACC_COLORS.length];
     card.innerHTML=`<div class="acc-top"><span class="acc-name">${acc.icon||'🏦'} ${esc(acc.name)}</span>
@@ -1318,7 +1340,7 @@ async function buildSavingsPage(){
         <button class="acc-del-btn" style="background:none;border:1px solid rgba(200,80,80,.3);color:var(--coral-dk);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:13px;opacity:.7" title="Konto löschen">✕ Konto</button>
       </div></div>
       <div class="acc-bal">${fmt(bal)}</div>
-      <div class="acc-meta">Startguthaben + ${fmt(deps+mans)} eingezahlt · ${fmt(wds)} ausgegeben</div>
+      <div class="acc-meta">Startguthaben + ${fmt(deps+mans+seins)} eingezahlt · ${fmt(wds)} ausgegeben</div>
       <div class="acc-start-row"><span class="acc-start-lbl">Startguthaben:</span>
       <input class="acc-start-in" type="number" value="${acc.startingBalance||''}" placeholder="0,00" step="0.01" data-accid="${acc.id}"></div>`;
     card.querySelector('.acc-add-btn').onclick=()=>{manAccId=acc.id;document.getElementById('manTitle').textContent=`${acc.icon||''} ${acc.name}: Betrag hinzufügen`;document.getElementById('manDate').value=today();document.getElementById('manAmt').value='';document.getElementById('manDesc').value='';document.getElementById('manOvl').classList.add('open');};
@@ -1380,12 +1402,51 @@ async function buildSavingsPage(){
   }
   const addSondBtnEl=mk('button','addbtn coral');addSondBtnEl.textContent='+ Sonderausgabe eintragen';
   addSondBtnEl.onclick=()=>{
-    // Populate account selector
     const sel=document.getElementById('sondAcc');sel.innerHTML=accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
     document.getElementById('sondDate').value=today();document.getElementById('sondAmt').value='';document.getElementById('sondDesc').value='';
     document.getElementById('sondOvl').classList.add('open');
   };
   sCard.appendChild(addSondBtnEl);c.appendChild(sCard);
+
+  // Sondereinnahmen card
+  const allSeins=(SAV.specialIncome||[]).filter(w=>(w.date||'').substring(0,7)>=APP_START).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const einCard=mk('div','card');
+  const seinTotal=allSeins.reduce((s,w)=>s+(w.amount||0),0);
+  einCard.innerHTML=`<div class="card-hd sav"><span class="ctitle">🌱 Sondereinnahmen</span><span class="ctotal" style="color:var(--mint-dk)">${fmt(seinTotal)}</span></div>`;
+  if(!allSeins.length){einCard.innerHTML+=`<div class="empty-hint">Noch keine Sondereinnahmen</div>`;}
+  else{
+    const byMonth={};
+    allSeins.forEach(w=>{const mk2=(w.date||'').substring(0,7);if(!byMonth[mk2])byMonth[mk2]=[];byMonth[mk2].push(w);});
+    const curKey=`${yr}-${pad(mo+1)}`;
+    Object.keys(byMonth).sort().reverse().forEach(mKey=>{
+      const[ky,km]=mKey.split('-').map(Number);
+      const mTotal=byMonth[mKey].reduce((s,w)=>s+(w.amount||0),0);
+      const mLabel=`${MN[km-1]} ${ky}`;
+      const isOpen=mKey===curKey;
+      const grp=mk('div','');grp.style.cssText='border-bottom:1px solid var(--border)';
+      const ghd=mk('div','');
+      ghd.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;gap:8px;background:var(--mint-bg)';
+      const arr=mk('span','');arr.style.cssText='font-size:16px;transition:transform .2s;color:var(--sub)';arr.textContent='›';if(isOpen)arr.style.transform='rotate(90deg)';
+      ghd.innerHTML=`<span style="font-weight:700;font-size:13px">${mLabel}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--mint-dk);font-weight:700">+${fmt(mTotal)}</span></div>`;
+      ghd.appendChild(arr);
+      const gbody=mk('div','');if(!isOpen)gbody.style.display='none';
+      byMonth[mKey].forEach(w=>{
+        const acc=accs.find(a=>a.id===w.accountId);
+        const r=mk('div','sond-row');
+        r.innerHTML=`<span class="sond-date">${fmtD(w.date)}</span><span class="sond-acc">${esc(acc?.name||'?')}</span><span class="sond-desc">${esc(w.description)||'—'}</span><span class="sond-amt" style="color:var(--mint-dk)">+${fmt(w.amount)}</span><button class="delbtn">✕</button>`;
+        r.querySelector('.delbtn').onclick=()=>delSEin(w.id);gbody.appendChild(r);
+      });
+      ghd.onclick=()=>{const open=gbody.style.display!=='none';gbody.style.display=open?'none':'block';arr.style.transform=open?'':'rotate(90deg)';};
+      grp.appendChild(ghd);grp.appendChild(gbody);einCard.appendChild(grp);
+    });
+  }
+  const addSeinBtnEl=mk('button','addbtn sun');addSeinBtnEl.textContent='+ Sondereinnahme eintragen';
+  addSeinBtnEl.onclick=()=>{
+    const sel=document.getElementById('seinAcc');sel.innerHTML=accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    document.getElementById('seinDate').value=today();document.getElementById('seinAmt').value='';document.getElementById('seinDesc').value='';
+    document.getElementById('seinOvl').classList.add('open');
+  };
+  einCard.appendChild(addSeinBtnEl);c.appendChild(einCard);
 }
 
 function buildSavingsChart(accs,colors){
@@ -1403,8 +1464,9 @@ function buildSavingsChart(accs,colors){
     monthKeys.forEach(mKey=>{
       const deps=(SAV.deposits||[]).filter(d=>d.accountId===acc.id&&d.month===mKey).reduce((s,d)=>s+(d.amount||0),0);
       const mans=(SAV.manualAdditions||[]).filter(d=>d.accountId===acc.id&&(d.date||'').slice(0,7)===mKey).reduce((s,d)=>s+(d.amount||0),0);
+      const seins=(SAV.specialIncome||[]).filter(d=>d.accountId===acc.id&&(d.date||'').slice(0,7)===mKey).reduce((s,d)=>s+(d.amount||0),0);
       const wds=(SAV.withdrawals||[]).filter(w=>w.accountId===acc.id&&(w.date||'').slice(0,7)===mKey).reduce((s,w)=>s+(w.amount||0),0);
-      running+=deps+mans-wds;
+      running+=deps+mans+seins-wds;
       balByAcc[acc.id][mKey]=running;
     });
   });
@@ -1478,19 +1540,26 @@ async function delSavAcc(id){
   buildSavingsPage();
 }
 async function saveManualAddition(){
-  const a=parseFloat(document.getElementById('manAmt').value),dt=document.getElementById('manDate').value||today(),d=document.getElementById('manDesc').value.trim();
+  const a=parseAmt(document.getElementById('manAmt').value),dt=document.getElementById('manDate').value||today(),d=document.getElementById('manDesc').value.trim();
   if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
   SAV.manualAdditions=SAV.manualAdditions||[];
   SAV.manualAdditions.push({id:uid(),accountId:manAccId,amount:a,date:dt,description:d});
   await savSAV();document.getElementById('manOvl').classList.remove('open');buildSavingsPage();
 }
 async function saveSondEntry(){
-  const a=parseFloat(document.getElementById('sondAmt').value),dt=document.getElementById('sondDate').value||today(),d=document.getElementById('sondDesc').value.trim(),accId=document.getElementById('sondAcc').value;
+  const a=parseAmt(document.getElementById('sondAmt').value),dt=document.getElementById('sondDate').value||today(),d=document.getElementById('sondDesc').value.trim(),accId=document.getElementById('sondAcc').value;
   if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
   SAV.withdrawals=SAV.withdrawals||[];SAV.withdrawals.push({id:uid(),accountId:accId,amount:a,date:dt,description:d});
   await savSAV();document.getElementById('sondOvl').classList.remove('open');buildSavingsPage();
 }
 async function delSond(id){SAV.withdrawals=(SAV.withdrawals||[]).filter(w=>w.id!==id);await savSAV();buildSavingsPage();}
+async function saveSEinEntry(){
+  const a=parseAmt(document.getElementById('seinAmt').value),dt=document.getElementById('seinDate').value||today(),d=document.getElementById('seinDesc').value.trim(),accId=document.getElementById('seinAcc').value;
+  if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
+  SAV.specialIncome=SAV.specialIncome||[];SAV.specialIncome.push({id:uid(),accountId:accId,amount:a,date:dt,description:d});
+  await savSAV();document.getElementById('seinOvl').classList.remove('open');buildSavingsPage();
+}
+async function delSEin(id){SAV.specialIncome=(SAV.specialIncome||[]).filter(w=>w.id!==id);await savSAV();buildSavingsPage();}
 
 // ── ADD BTN HELPER
 function addBtn(fid,label,color,bgCls){
@@ -1607,6 +1676,7 @@ document.getElementById('delCanc').onclick=()=>{pendingDel=null;document.getElem
 // Savings sheets
 document.getElementById('saveMan').onclick=saveManualAddition;document.getElementById('cancMan').onclick=()=>document.getElementById('manOvl').classList.remove('open');document.getElementById('closeMan').onclick=()=>document.getElementById('manOvl').classList.remove('open');
 document.getElementById('saveSondBtn').onclick=saveSondEntry;document.getElementById('cancSond').onclick=()=>document.getElementById('sondOvl').classList.remove('open');document.getElementById('closeSond').onclick=()=>document.getElementById('sondOvl').classList.remove('open');
+document.getElementById('saveSeinBtn').onclick=saveSEinEntry;document.getElementById('cancSein').onclick=()=>document.getElementById('seinOvl').classList.remove('open');document.getElementById('closeSein').onclick=()=>document.getElementById('seinOvl').classList.remove('open');
 document.getElementById('closeDetail').onclick=()=>document.getElementById('detailOvl').classList.remove('open');
 
 // ── BOOT
