@@ -14,21 +14,21 @@ if('caches'in window){caches.keys().then(ns=>ns.forEach(n=>caches.delete(n).catc
 </script>
 <style>
 :root{
-  --rose:#e5bfc4;   --rose-bg:#f9eff1;  --rose-dk:#b96a75;
-  --lav:#c3d1bd;    --lav-bg:#f0f4ed;   --lav-dk:#6f8a68;
-  --peach:#e0b09a;  --peach-bg:#f9efe8; --peach-dk:#b4633f;
-  --sun:#ddc9a3;    --sun-bg:#f8f3e6;   --sun-dk:#9a7c40;
-  --coral:#d9a08f;  --coral-bg:#f8ece7; --coral-dk:#a54a32;
-  --mint-dk:#4f7d5c;--mint-bg:#eef4ef;
-  --bg:#faf5ee; --white:#fffdfa; --border:#ecdfd0;
-  --text:#3f362c; --sub:#8c7d6d; --muted:#c2b3a2;
-  --shadow:0 2px 12px rgba(150,110,70,.08);
+  --rose:#e3b7c3;   --rose-bg:#f8eef1;  --rose-dk:#c9798f;
+  --lav:#d8d2d6;    --lav-bg:#f4f2f3;   --lav-dk:#8a7f88;
+  --peach:#d9c3b8;  --peach-bg:#f5f0ed; --peach-dk:#9a7a68;
+  --sun:#dccfa8;    --sun-bg:#f6f3ea;   --sun-dk:#a08d5f;
+  --coral:#dba8b0;  --coral-bg:#f8edef; --coral-dk:#b25f6d;
+  --mint-dk:#5a9478;--mint-bg:#eef4f1;
+  --bg:#faf9f9; --white:#ffffff; --border:#eceae9;
+  --text:#3a3538; --sub:#837c80; --muted:#bdb6ba;
+  --shadow:0 2px 10px rgba(0,0,0,.05);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:72px}
 
 /* NAV */
-.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:50;box-shadow:0 -2px 10px rgba(150,110,70,.06)}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,.04)}
 .bnav button{flex:1;padding:8px 4px 10px;border:none;background:none;font-size:10px;font-weight:700;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;letter-spacing:.3px;text-transform:uppercase;transition:color .2s}
 .bnav button .ni{font-size:22px}
 .bnav button.active{color:var(--rose-dk)}
@@ -38,7 +38,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* HEADER */
 .hdr{
-  background:linear-gradient(to bottom,#f7ece4,#fbf6ef);
+  background:linear-gradient(to bottom,#f0eded,#faf9f9);
   border-bottom:1px solid var(--border);
   padding:18px 16px 24px;position:relative;overflow:hidden
 }
@@ -56,8 +56,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sval.pos{color:var(--mint-dk)}.sval.neg{color:var(--coral-dk)}
 
 /* PAGE HEADERS */
-.page-hdr{padding:20px 16px 16px;background:linear-gradient(to bottom,#f7ece4,#fbf6ef);border-bottom:1px solid var(--border)}
-.page-hdr.sav-hdr{background:linear-gradient(to bottom,#f7ece4,#fbf6ef)}
+.page-hdr{padding:20px 16px 16px;background:linear-gradient(to bottom,#f0eded,#faf9f9);border-bottom:1px solid var(--border)}
+.page-hdr.sav-hdr{background:linear-gradient(to bottom,#f0eded,#faf9f9)}
 .page-hdr h2{font-size:22px;font-weight:800;color:var(--text);margin-bottom:2px}
 .page-hdr p{font-size:13px;color:var(--sub)}
 
@@ -90,7 +90,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @media(hover:hover){.row:hover .edit-ico,.sub-row:hover .edit-ico{opacity:1;pointer-events:auto}}
 
 /* INPUTS */
-.sal-in{width:120px;text-align:right;border:1.5px solid var(--border);border-radius:10px;padding:6px 10px;font-size:14px;font-weight:700;color:var(--mint-dk);background:#f8f4ec}
+.sal-in{width:120px;text-align:right;border:1.5px solid var(--border);border-radius:10px;padding:6px 10px;font-size:14px;font-weight:700;color:var(--mint-dk);background:#f6f5f5}
 .sal-in:focus{outline:none;border-color:var(--rose-dk);background:var(--white)}
 .amt-in{width:88px;text-align:right;border:1.5px solid transparent;border-radius:8px;padding:5px 8px;font-size:14px;font-weight:700;background:transparent;color:var(--text)}
 .amt-in:focus{outline:none;border-color:var(--lav-dk);background:var(--white)}
@@ -98,7 +98,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* DRAG SORT */
 .drag-handle{display:flex;align-items:center;justify-content:center;padding:0 7px;cursor:grab;flex-shrink:0;touch-action:none;color:var(--muted);opacity:.35;-webkit-user-select:none;user-select:none;transition:opacity .15s}
 .drag-handle:active{cursor:grabbing;opacity:.9}
-.drag-active{opacity:.4!important;background:rgba(184,196,176,.2)!important;transform:scale(1.01);box-shadow:0 4px 16px rgba(109,138,100,.15)!important}
+.drag-active{opacity:.4!important;background:rgba(201,121,143,.1)!important;transform:scale(1.01);box-shadow:0 4px 16px rgba(201,121,143,.18)!important}
 .drop-above{box-shadow:inset 0 3px 0 var(--lav-dk)!important}
 .drop-below{box-shadow:inset 0 -3px 0 var(--lav-dk)!important}
 
@@ -128,10 +128,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .bdg-ein{background:var(--peach-bg);color:var(--peach-dk)}
 
 /* BUTTONS */
-.delbtn{background:none;border:none;color:#d5c5b2;cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;flex-shrink:0}
+.delbtn{background:none;border:none;color:#cfc8cc;cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;flex-shrink:0}
 .delbtn:hover{color:#e53935}
 .addbtn{display:flex;align-items:center;gap:6px;width:100%;padding:10px 16px;background:none;border:none;font-size:14px;font-weight:600;cursor:pointer;text-align:left;color:var(--sub);transition:background .15s}
-@media(hover:hover){.addbtn:hover{background:#f7f0e6}}
+@media(hover:hover){.addbtn:hover{background:#f5f2f3}}
 .addbtn.rose{color:var(--rose-dk)}.addbtn.lav{color:var(--lav-dk)}.addbtn.peach{color:var(--peach-dk)}.addbtn.sun{color:var(--sun-dk)}.addbtn.coral{color:var(--coral-dk)}
 
 /* FORMS */
@@ -188,7 +188,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* STATS */
 .expand-block{background:var(--white);border-radius:16px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
 .exp-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer}
-@media(hover:hover){.exp-hd:hover{background:#f8f2e8}}
+@media(hover:hover){.exp-hd:hover{background:#f5f2f3}}
 .exp-title{font-size:15px;font-weight:700}
 .exp-ico{font-size:14px;color:var(--muted);transition:transform .2s}
 .exp-ico.open{transform:rotate(90deg)}
@@ -212,7 +212,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .acc-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .acc-start-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .acc-start-lbl{font-size:12px;color:var(--sub)}
-.acc-start-in{width:110px;text-align:right;border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:13px;font-weight:600;background:#f8f4ec;color:var(--text)}
+.acc-start-in{width:110px;text-align:right;border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:13px;font-weight:600;background:#f6f5f5;color:var(--text)}
 .acc-start-in:focus{outline:none;border-color:var(--sun-dk);background:var(--white)}
 
 .chart-wrap{background:var(--white);border-radius:16px;padding:14px 14px 8px;box-shadow:var(--shadow);margin-bottom:10px}
@@ -761,7 +761,7 @@ function attachAccordion(fc,row,sec){
   // For items with no subs, add amount editor at top of expansion
   if(!fc.subs||fc.subs.length===0){
     const amtRow=mk('div','');
-    amtRow.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0 10px;border-bottom:1px solid rgba(109,138,100,.15)';
+    amtRow.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0 10px;border-bottom:1px solid rgba(0,0,0,.07)';
     amtRow.innerHTML=`<span style="font-size:13px;color:var(--sub);flex:1">Betrag</span><input type="text" class="fi" value="${fmtVal(fc.amount)}" placeholder="0,00" style="width:90px;font-size:13px;padding:5px 8px" id="fxamt_${fc.id}">`;
     amtRow.querySelector('input').addEventListener('blur',e=>updFxAmt(fc.id,parseAmt(e.target.value)));
     exp.appendChild(amtRow);
@@ -773,7 +773,7 @@ function attachAccordion(fc,row,sec){
     const addTrig=exp.querySelector('.add-trig');
     (fc.subs||[]).forEach(si=>{
       const sr=mk('div','isr');
-      sr.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(109,138,100,.12)';
+      sr.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.06)';
       const schkEl=mk('div',`schk${si.checked?' done':''}`);
       schkEl.style.cssText='width:22px;height:22px;flex-shrink:0;font-size:12px';schkEl.textContent='✓';
       const nameIn=mk('input');nameIn.type='text';nameIn.value=si.name;nameIn.className='fi';nameIn.style.cssText='flex:1;font-size:13px;padding:5px 8px;min-width:0';
@@ -874,7 +874,7 @@ function buildFixed(){
         document.getElementById('fa').value=t.def||'';
         selectedFxTplId=t.id;
         tplWrap.querySelectorAll('div[style*="border-radius:20px"]').forEach(c=>{c.style.borderColor='var(--border)';c.style.background='var(--lav-bg)';});
-        chip.style.borderColor='var(--lav-dk)';chip.style.background='rgba(109,138,100,.12)';
+        chip.style.borderColor='var(--lav-dk)';chip.style.background='rgba(201,121,143,.1)';
       };
       tplWrap.appendChild(chip);
     });
@@ -1196,7 +1196,7 @@ function buildVariable(){
       } else {
         entries.forEach(en=>{
           const er=mk('div','cer');
-          er.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(168,124,72,.15);font-size:13px';
+          er.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13px';
           er.innerHTML=`<span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${fmtD(en.date)}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(en.description)||'—'}</span><span style="font-weight:700;color:var(--sub);white-space:nowrap">${fmt(en.amount)}</span><button style="background:none;border:none;font-size:12px;cursor:pointer;padding:0 2px;opacity:.4">✏️</button><button class="delbtn" style="font-size:12px">✕</button>`;
           er.querySelectorAll('button')[0].onclick=ev=>{ev.stopPropagation();editEntry(en.id);document.getElementById('varOvl').classList.add('open');};
           er.querySelector('.delbtn').onclick=()=>{if(en.isFix){pendingDel={id:en.id};document.getElementById('delOvl').classList.add('open');}else delEntry(en.id);};
