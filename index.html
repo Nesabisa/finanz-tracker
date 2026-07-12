@@ -708,7 +708,7 @@ function render(){
     if(h){h.textContent=hEmoji;h.onclick=changeNavEmoji;}
   });
   const c=document.getElementById('content');c.innerHTML='';
-  c.appendChild(buildIncome());c.appendChild(buildFixed());c.appendChild(buildSparen());c.appendChild(buildVariable());c.appendChild(buildBackup());
+  c.appendChild(buildIncome());c.appendChild(buildFixed());c.appendChild(buildSparen());c.appendChild(buildVariable());c.appendChild(buildSonder());c.appendChild(buildBackup());
 }
 async function changeNavEmoji(){
   const v=prompt('Emoji für diesen Monat (z.B. 🩷 ✨ 🌸 🦋):',M.navEmoji||'💜');
@@ -1350,7 +1350,8 @@ async function buildStats(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 16px">
       <div style="background:var(--mint-bg);border-radius:12px;padding:12px"><div style="${boxLbl}">Einnahmen</div><div style="font-size:17px;font-weight:800;color:var(--mint-dk)">${fmt(inc)}</div></div>
       <div style="background:var(--peach-bg);border-radius:12px;padding:12px"><div style="${boxLbl}">Ausgaben</div><div style="font-size:17px;font-weight:800;color:var(--peach-dk)">${fmt(exp)}</div></div>
-      <div style="background:${left>=0?'var(--lav-bg)':'var(--coral-bg)'};border-radius:12px;padding:12px;grid-column:1/-1"><div style="${boxLbl}">Übrig</div><div style="font-size:20px;font-weight:800;color:${left>=0?'var(--mint-dk)':'var(--coral-dk)'}">${fmt(left)}</div></div>
+      <div style="background:${left>=0?'var(--lav-bg)':'var(--coral-bg)'};border-radius:12px;padding:12px"><div style="${boxLbl}">Übrig</div><div style="font-size:20px;font-weight:800;color:${left>=0?'var(--mint-dk)':'var(--coral-dk)'}">${fmt(left)}</div></div>
+      <div style="background:var(--coral-bg);border-radius:12px;padding:12px"><div style="${boxLbl}">Sonderausgaben</div><div style="font-size:20px;font-weight:800;color:var(--coral-dk)">${fmt(calcMonthSonder(M))}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">nicht vom Gehalt abgezogen</div></div>
     </div>`;
   c.appendChild(hh);
   const spSum=sparSum(M),spSp=sparSpent(M);
@@ -1367,7 +1368,7 @@ async function buildStats(){
     const snap=await getDocs(collection(db,'personal_months'));
     snap.forEach(d=>{
       const data=d.data();
-      if(!data.salary&&!data.variableEntries?.length&&!data.extraIncome?.length&&!Object.keys(data.sparkonto?.balances||{}).length)return;
+      if(!data.salary&&!data.variableEntries?.length&&!data.extraIncome?.length&&!Object.keys(data.sparkonto?.balances||{}).length&&!data.sonderausgaben?.length)return;
       const[y,mm]=d.id.split('-').map(Number);
       allMonths.push({key:d.id,yr:y,mo:mm-1,data});
     });
@@ -1376,13 +1377,14 @@ async function buildStats(){
   if(allMonths.length){
     const hist=mk('div','card');
     hist.innerHTML=`<div class="card-hd"><span class="ctitle">Alle Monate</span></div>
-      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;padding:12px 16px 14px;font-size:13px;align-items:center">
-        <span></span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Ein</span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Aus</span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Sparkonto</span>
+      <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:4px 10px;padding:12px 16px 14px;font-size:13px;align-items:center">
+        <span></span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Ein</span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Aus</span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Sonder</span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Sparkonto</span>
         ${allMonths.map(m=>{
           const cur=m.yr===yr&&m.mo===mo;
           return `<span style="font-weight:${cur?'800':'600'}">${MN[m.mo].slice(0,3)} ${String(m.yr).slice(2)}</span>
             <span style="text-align:right;color:var(--mint-dk)">${fmt(calcMonthInc(m.data))}</span>
             <span style="text-align:right;color:var(--peach-dk)">${fmt(calcMonthExp(m.data))}</span>
+            <span style="text-align:right;color:var(--coral-dk)">${fmt(calcMonthSonder(m.data))}</span>
             <span style="text-align:right;font-weight:700">${fmt(sparSum(m.data))}</span>`;
         }).join('')}
       </div>`;
@@ -1491,6 +1493,39 @@ async function saveSEinEntry(){
   await savSAV();document.getElementById('seinOvl').classList.remove('open');buildSavingsPage();
 }
 async function delSEin(id){SAV.specialIncome=(SAV.specialIncome||[]).filter(w=>w.id!==id);await savSAV();buildSavingsPage();}
+
+// ── SONDERAUSGABEN (Haushalt — zählt NICHT zu den Ausgaben)
+function calcMonthSonder(d){return(d?.sonderausgaben||[]).reduce((s,e)=>s+(e.amount||0),0);}
+function buildSonder(){
+  if(!M.sonderausgaben)M.sonderausgaben=[];
+  const sec=mk('div','card');
+  const tot=calcMonthSonder(M);
+  const hd=mk('div','card-hd sond');
+  hd.innerHTML=`<span class="ctitle">Sonderausgaben</span><span class="ctotal" style="color:var(--coral-dk)">${fmt(tot)}</span>`;
+  sec.appendChild(hd);
+  const list=(M.sonderausgaben||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!list.length){const eh=mk('div','empty-hint');eh.textContent='Noch keine Einträge';sec.appendChild(eh);}
+  list.forEach(e2=>{
+    const r=mk('div','erow');r.style.padding='11px 16px';
+    r.innerHTML=`<span class="edate">${fmtD(e2.date)}</span><span class="edesc">${esc(e2.desc)||'—'}</span><span class="eamt" style="color:var(--coral-dk)">-${fmt(e2.amount)}</span><button class="delbtn">✕</button>`;
+    r.querySelector('.delbtn').onclick=async()=>{M.sonderausgaben=M.sonderausgaben.filter(x=>x.id!==e2.id);await save();render();};
+    sec.appendChild(r);
+  });
+  const[sb,sf]=addBtn('sonderF','+ Sonderausgabe','coral','fcoral');
+  sf.innerHTML=`<div class="frow"><input class="fi fi-h" type="text" id="soAmt" placeholder="Betrag (€)"><input class="fi fi-h" type="date" id="soDate"></div><input class="fi" id="soDesc" placeholder="Wofür? (z.B. Neues Sofa)" style="margin-bottom:8px"><div class="frow" style="margin:0"><button class="bsave" style="background:var(--coral-dk)" id="soSave">Speichern</button><button class="bcanc" id="soCanc">Abbrechen</button></div>`;
+  sec.appendChild(sb);sec.appendChild(sf);
+  sf.querySelector('#soDate').value=today();
+  sf.querySelector('#soSave').onclick=async()=>{
+    const a=parseAmt(document.getElementById('soAmt').value);
+    if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
+    M.sonderausgaben.push({id:uid(),date:document.getElementById('soDate').value||today(),desc:document.getElementById('soDesc').value.trim(),amount:a});
+    await save();render();
+  };
+  sf.querySelector('#soCanc').onclick=()=>showF('sonderF',false);
+  const hint=mk('div','');hint.style.cssText='padding:8px 16px 12px;font-size:12px;color:var(--muted)';hint.textContent='Wird nicht vom Gehalt abgezogen — nur zur Übersicht.';
+  sec.appendChild(hint);
+  return sec;
+}
 
 // ── ADD BTN HELPER
 function addBtn(fid,label,color,bgCls){
