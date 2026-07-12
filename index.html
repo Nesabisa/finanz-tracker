@@ -265,21 +265,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- PAGE: STATISTIK -->
 <div class="page" id="page-stats">
-  <div class="page-hdr"><h2>Statistik</h2><p>Ausgaben über die Monate</p></div>
+  <div class="page-hdr"><h2>Übersicht</h2><p>Einnahmen, Ausgaben & Sparkonto</p></div>
   <div class="content" id="statsContent"><div class="loading">Lade...</div></div>
 </div>
 
 <!-- PAGE: SPAREN -->
 <div class="page" id="page-savings">
-  <div class="page-hdr sav-hdr"><h2>Sparen</h2><p>Kontenübersicht & Entwicklung</p></div>
+  <div class="page-hdr sav-hdr"><h2>Sparkonto</h2><p>Kontostand & Ausgaben — jeden Monat neu</p></div>
   <div class="content" id="savContent"><div class="loading">Lade...</div></div>
 </div>
 
 <!-- BOTTOM NAV -->
 <nav class="bnav">
   <button class="active" data-page="budget"><span class="ni">🏠</span>Haushalt</button>
-  <button data-page="stats"><span class="ni">📊</span>Statistik</button>
-  <button data-page="savings"><span class="ni">🌱</span>Sparen</button>
+  <button data-page="stats"><span class="ni">📊</span>Übersicht</button>
+  <button data-page="savings"><span class="ni">🌱</span>Sparkonto</button>
 </nav>
 
 <!-- FIXED COST SHEET -->
@@ -1327,310 +1327,128 @@ async function delEntryAndRec(id){
   await saveSett();await delEntry(id);
 }
 
-// ── STATS PAGE
+// ── ÜBERSICHT PAGE
+function calcMonthInc(d){return(d.salary||0)+(d.extraIncome||[]).reduce((s,e)=>s+(e.amount||0),0);}
+function calcMonthExp(d){return(d.fixedCosts||[]).reduce((s,fc)=>fc.subs?.length?s+fc.subs.filter(si=>si.checked).reduce((a,si)=>a+(si.amount||0),0):s+(fc.checked?fc.amount||0:0),0)+(d.variableEntries||[]).reduce((s,e)=>s+(e.amount||0),0);}
+function sparSum(d){return Object.values(d?.sparkonto?.balances||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);}
+function sparSpent(d){return(d?.sparkonto?.spendings||[]).reduce((s,e)=>s+(e.amount||0),0);}
+function pageMonthNav(){
+  const nav=mk('div','');
+  nav.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0 12px';
+  nav.innerHTML=`<button class="nbtn" style="background:var(--white);border:1px solid var(--border)">&#8249;</button><span style="font-size:17px;font-weight:800;min-width:130px;text-align:center">${MN[mo]} ${yr}</span><button class="nbtn" style="background:var(--white);border:1px solid var(--border)">&#8250;</button>`;
+  const btns=nav.querySelectorAll('button');
+  btns[0].onclick=()=>navTo(-1);btns[1].onclick=()=>navTo(1);
+  return nav;
+}
 async function buildStats(){
-  const c=document.getElementById('statsContent');c.innerHTML='<div class="loading">Lade…</div>';
-  // Alle Monate aus Firebase laden
+  const c=document.getElementById('statsContent');c.innerHTML='';
+  c.appendChild(pageMonthNav());
+  const inc=calcMonthInc(M),exp=calcMonthExp(M),left=inc-exp;
+  const boxLbl='font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px';
+  const hh=mk('div','card');
+  hh.innerHTML=`<div class="card-hd inc"><span class="ctitle">Haushalt</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 16px">
+      <div style="background:var(--mint-bg);border-radius:12px;padding:12px"><div style="${boxLbl}">Einnahmen</div><div style="font-size:17px;font-weight:800;color:var(--mint-dk)">${fmt(inc)}</div></div>
+      <div style="background:var(--peach-bg);border-radius:12px;padding:12px"><div style="${boxLbl}">Ausgaben</div><div style="font-size:17px;font-weight:800;color:var(--peach-dk)">${fmt(exp)}</div></div>
+      <div style="background:${left>=0?'var(--lav-bg)':'var(--coral-bg)'};border-radius:12px;padding:12px;grid-column:1/-1"><div style="${boxLbl}">Übrig</div><div style="font-size:20px;font-weight:800;color:${left>=0?'var(--mint-dk)':'var(--coral-dk)'}">${fmt(left)}</div></div>
+    </div>`;
+  c.appendChild(hh);
+  const spSum=sparSum(M),spSp=sparSpent(M);
+  const sk=mk('div','card');
+  sk.innerHTML=`<div class="card-hd sav"><span class="ctitle">Sparkonto</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 16px">
+      <div style="background:var(--sun-bg);border-radius:12px;padding:12px"><div style="${boxLbl}">Stand Ende Monat</div><div style="font-size:17px;font-weight:800">${fmt(spSum)}</div></div>
+      <div style="background:var(--coral-bg);border-radius:12px;padding:12px"><div style="${boxLbl}">Davon ausgegeben</div><div style="font-size:17px;font-weight:800;color:var(--coral-dk)">${fmt(spSp)}</div></div>
+    </div>`;
+  c.appendChild(sk);
+  // Alle Monate kompakt
   let allMonths=[];
   try{
     const snap=await getDocs(collection(db,'personal_months'));
     snap.forEach(d=>{
       const data=d.data();
-      if(!data.salary&&!data.variableEntries?.length&&!data.extraIncome?.length)return;
+      if(!data.salary&&!data.variableEntries?.length&&!data.extraIncome?.length&&!Object.keys(data.sparkonto?.balances||{}).length)return;
       const[y,mm]=d.id.split('-').map(Number);
       allMonths.push({key:d.id,yr:y,mo:mm-1,data});
     });
-    allMonths.sort((a,b)=>a.key.localeCompare(b.key));
-  }catch(e){console.error('stats:',e);}
-  c.innerHTML='';
-  if(!allMonths.length){c.innerHTML='<div class="empty-hint">Noch keine Daten</div>';return;}
-  const calcInc=m=>(m.data.salary||0)+(m.data.extraIncome||[]).reduce((s,e)=>s+(e.amount||0),0);
-  const calcExp=m=>(m.data.fixedCosts||[]).reduce((s,fc)=>fc.subs?.length?s+fc.subs.filter(si=>si.checked).reduce((a,si)=>a+(si.amount||0),0):s+(fc.checked?fc.amount||0:0),0)+(m.data.variableEntries||[]).reduce((s,e)=>s+(e.amount||0),0);
-  // Gesamtübersicht Karte
-  const totalInc=allMonths.reduce((s,m)=>s+calcInc(m),0);
-  const totalExp=allMonths.reduce((s,m)=>s+calcExp(m),0);
-  const totalSav=totalInc-totalExp,n=allMonths.length;
-  const sumCard=mk('div','card');
-  sumCard.innerHTML=`<div class="card-hd"><span class="ctitle">✨ Gesamtübersicht · ${n} Monate</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px">
-      <div style="background:var(--lav-bg);border-radius:12px;padding:12px">
-        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Einnahmen</div>
-        <div style="font-size:17px;font-weight:800">${fmt(totalInc)}</div>
-        <div style="font-size:11px;color:var(--muted)">⌀ ${fmt(totalInc/n)}/Mon.</div>
-      </div>
-      <div style="background:var(--peach-bg);border-radius:12px;padding:12px">
-        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Ausgaben</div>
-        <div style="font-size:17px;font-weight:800">${fmt(totalExp)}</div>
-        <div style="font-size:11px;color:var(--muted)">⌀ ${fmt(totalExp/n)}/Mon.</div>
-      </div>
-      <div style="background:${totalSav>=0?'rgba(80,200,120,.12)':'rgba(220,80,80,.1)'};border-radius:12px;padding:12px;grid-column:1/-1">
-        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Gesamt übrig geblieben</div>
-        <div style="font-size:20px;font-weight:800;color:${totalSav>=0?'var(--pos)':'var(--neg)'}">${fmt(totalSav)}</div>
-        <div style="font-size:11px;color:var(--muted)">⌀ ${fmt(totalSav/n)}/Mon.</div>
-      </div>
-    </div>`;
-  c.appendChild(sumCard);
-  // Alle-Monate Chart
-  const cblock=mk('div','expand-block');
-  const chd=mk('div','exp-hd');chd.innerHTML=`<span class="exp-title">📅 Alle Monate (${n})</span><span class="exp-ico open">›</span>`;
-  const cbody=mk('div','exp-body open');
-  const maxV=Math.max(...allMonths.map(m=>calcInc(m)),1);
-  allMonths.forEach(m=>{
-    const inc=calcInc(m),exp=calcExp(m);
-    const r=mk('div','bar-row');
-    r.innerHTML=`<span class="bar-lbl" style="width:52px;font-size:11px">${MN[m.mo].slice(0,3)} ${String(m.yr).slice(2)}</span>
-      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
-        <div style="display:flex;align-items:center;gap:6px"><div class="bar-bg" style="height:7px"><div class="bar-fill rose" style="width:${Math.round(inc/maxV*100)}%"></div></div><span style="font-size:10px;color:var(--muted);width:60px;text-align:right">${fmt(inc)}</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div class="bar-bg" style="height:7px"><div class="bar-fill lav" style="width:${Math.round(exp/maxV*100)}%"></div></div><span style="font-size:10px;color:var(--muted);width:60px;text-align:right">${fmt(exp)}</span></div>
+    allMonths.sort((a,b)=>b.key.localeCompare(a.key));
+  }catch(e){console.error('uebersicht:',e);}
+  if(allMonths.length){
+    const hist=mk('div','card');
+    hist.innerHTML=`<div class="card-hd"><span class="ctitle">Alle Monate</span></div>
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;padding:12px 16px 14px;font-size:13px;align-items:center">
+        <span></span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Ein</span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Aus</span><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:right">Sparkonto</span>
+        ${allMonths.map(m=>{
+          const cur=m.yr===yr&&m.mo===mo;
+          return `<span style="font-weight:${cur?'800':'600'}">${MN[m.mo].slice(0,3)} ${String(m.yr).slice(2)}</span>
+            <span style="text-align:right;color:var(--mint-dk)">${fmt(calcMonthInc(m.data))}</span>
+            <span style="text-align:right;color:var(--peach-dk)">${fmt(calcMonthExp(m.data))}</span>
+            <span style="text-align:right;font-weight:700">${fmt(sparSum(m.data))}</span>`;
+        }).join('')}
       </div>`;
-    cbody.appendChild(r);
-  });
-  const leg=mk('div','');leg.style.cssText='display:flex;gap:16px;padding:4px 16px 8px;font-size:12px;color:var(--sub)';
-  leg.innerHTML='<span>🟥 Einnahmen</span><span>🟪 Ausgaben</span>';cbody.appendChild(leg);
-  chd.onclick=()=>{cbody.classList.toggle('open');chd.querySelector('.exp-ico').classList.toggle('open');};
-  cblock.appendChild(chd);cblock.appendChild(cbody);c.appendChild(cblock);
-  // Fixkosten Breakdown (gesamt) — key nur nach Name, damit gleiche Posten aus versch. Monaten zusammengefasst werden
-  c.appendChild(buildStatsBlock('📌 Fixkosten (Gesamt)','lav',allMonths,m=>{
-    const items={};
-    (m.data.fixedCosts||[]).filter(fc=>!isSavItem(fc)).forEach(fc=>{
-      const ico=autoIcon(fc.name);
-      const a=effAmt(fc);if(a)items[`${ico} ${fc.name}`]=(items[`${ico} ${fc.name}`]||0)+a;
-    });
-    return items;
-  }));
-  c.appendChild(buildStatsBlock('🌱 Sparen (Gesamt)','sun',allMonths,m=>{
-    const items={};
-    (m.data.fixedCosts||[]).filter(isSavItem).forEach(fc=>{
-      const a=effAmt(fc);if(a)items['🌱 Sparen']=(items['🌱 Sparen']||0)+a;
-    });
-    return items;
-  }));
-  // Variable Breakdown (gesamt)
-  c.appendChild(buildStatsBlock('Variable Ausgaben (Gesamt)','peach',allMonths,m=>{
-    const items={};
-    (m.data.variableEntries||[]).forEach(e=>{const cat=S.categories.find(c=>c.id===e.categoryId);const nm=cat?`${cat.icon||''} ${cat.name}`:e.categoryId;items[nm]=(items[nm]||0)+(e.amount||0);});
-    return items;
-  }));
-}
-function buildStatsBlock(title,color,months,extractor){
-  const all={};months.forEach(m=>{const items=extractor(m);Object.entries(items).forEach(([k,v])=>all[k]=(all[k]||0)+v);});
-  const sorted=Object.entries(all).sort((a,b)=>b[1]-a[1]);
-  const tot=sorted.reduce((s,[,v])=>s+v,0);
-  const block=mk('div','expand-block');
-  const hd=mk('div','exp-hd');hd.innerHTML=`<span class="exp-title">${title}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:700">${fmt(tot)}</span><span class="exp-ico">›</span></div>`;
-  const body=mk('div','exp-body');
-  const max=sorted[0]?.[1]||1;
-  sorted.forEach(([name,amt])=>{
-    const r=mk('div','bar-row');
-    r.innerHTML=`<span class="bar-lbl">${esc(name)}</span><div class="bar-bg"><div class="bar-fill ${color}" style="width:${Math.round(amt/max*100)}%"></div></div><span class="bar-val">${fmt(amt)}</span>`;
-    body.appendChild(r);
-  });
-  if(!sorted.length)body.innerHTML='<div class="empty-hint">Keine Daten</div>';
-  hd.onclick=()=>{body.classList.toggle('open');hd.querySelector('.exp-ico').classList.toggle('open');};
-  block.appendChild(hd);block.appendChild(body);return block;
+    c.appendChild(hist);
+  }
 }
 
-// ── SAVINGS PAGE
+// ── SPARKONTO PAGE (manueller Kontostand pro Monat)
+function ensureSparkonto(){if(!M.sparkonto)M.sparkonto={};if(!M.sparkonto.balances)M.sparkonto.balances={};if(!M.sparkonto.spendings)M.sparkonto.spendings=[];}
 async function buildSavingsPage(){
-  if(!SAV)await loadSavings();
   const c=document.getElementById('savContent');c.innerHTML='';
+  ensureSparkonto();
+  c.appendChild(pageMonthNav());
   const accs=S.savingsAccounts||[];
-  const ACC_COLORS=['#c060e0','#d4557a','#c86020','#a87800'];
-
-  // Balance cards
-  accs.forEach((acc,i)=>{
-    const deps=(SAV.deposits||[]).filter(d=>d.accountId===acc.id).reduce((s,d)=>s+(d.amount||0),0);
-    const mans=(SAV.manualAdditions||[]).filter(d=>d.accountId===acc.id).reduce((s,d)=>s+(d.amount||0),0);
-    const seins=(SAV.specialIncome||[]).filter(d=>d.accountId===acc.id).reduce((s,d)=>s+(d.amount||0),0);
-    const wds=(SAV.withdrawals||[]).filter(w=>w.accountId===acc.id).reduce((s,w)=>s+(w.amount||0),0);
-    const bal=(acc.startingBalance||0)+deps+mans+seins-wds;
-    const card=mk('div','acc-card');
-    card.style.borderLeftColor=ACC_COLORS[i%ACC_COLORS.length];
-    card.innerHTML=`<div class="acc-top"><span class="acc-name">${acc.icon||'🏦'} ${esc(acc.name)}</span>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="bsave acc-add-btn" style="padding:6px 12px;font-size:13px">+ Hinzufügen</button>
-        <button class="acc-del-btn" style="background:none;border:1px solid rgba(200,80,80,.3);color:var(--coral-dk);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:13px;opacity:.7" title="Konto löschen">✕ Konto</button>
-      </div></div>
-      <div class="acc-bal">${fmt(bal)}</div>
-      <div class="acc-meta">Startguthaben + ${fmt(deps+mans+seins)} eingezahlt · ${fmt(wds)} ausgegeben</div>
-      <div class="acc-start-row"><span class="acc-start-lbl">Startguthaben:</span>
-      <input class="acc-start-in" type="text" value="${fmtVal(acc.startingBalance)}" placeholder="0,00" data-accid="${acc.id}"></div>`;
-    card.querySelector('.acc-add-btn').onclick=()=>{manAccId=acc.id;document.getElementById('manTitle').textContent=`${acc.icon||''} ${acc.name}: Betrag hinzufügen`;document.getElementById('manDate').value=today();document.getElementById('manAmt').value='';document.getElementById('manDesc').value='';document.getElementById('manOvl').classList.add('open');};
-    card.querySelector('.acc-del-btn').onclick=()=>delSavAcc(acc.id);
-    card.querySelector('.acc-start-in').addEventListener('change',async e=>{acc.startingBalance=parseAmt(e.target.value);await saveSett();buildSavingsPage();});
-    c.appendChild(card);
-  });
-
-  // Line chart
-  const chartCard=mk('div','chart-wrap');
-  chartCard.innerHTML=`<div class="chart-title">📈 Entwicklung über die Zeit</div>`;
-  chartCard.innerHTML+=buildSavingsChart(accs,ACC_COLORS);
-  const legend=mk('div','chart-legend');
-  accs.forEach((acc,i)=>{const d=mk('div','leg-item');d.innerHTML=`<div class="leg-dot" style="background:${ACC_COLORS[i%ACC_COLORS.length]}"></div><span>${esc(acc.name)}</span>`;legend.appendChild(d);});
-  chartCard.appendChild(legend);
-  c.appendChild(chartCard);
-
-  // Add account
-  const accCard=mk('div','card');
-  accCard.innerHTML=`<div class="card-hd sav"><span class="ctitle">🏦 Konto hinzufügen</span></div>`;
-  const[ab,af]=addBtn('acf','+ Neues Konto','sun','fsun');accCard.appendChild(ab);
-  af.innerHTML=`<div class="frow"><input class="fi fi-h" id="accN" placeholder="Name (z.B. Scalable)"><button class="bsave sun" id="accS">Hinzufügen</button><button class="bcanc" id="accC">Abbrechen</button></div>`;
-  accCard.appendChild(af);af.querySelector('#accS').onclick=addSavAcc;af.querySelector('#accC').onclick=()=>showF('acf',false);
-  c.appendChild(accCard);
-
-  // Sonderausgaben – nach Monaten gruppiert, ab April 2026
-  const APP_START='2026-04';
-  const allSonds=(SAV.withdrawals||[]).filter(w=>(w.date||'').substring(0,7)>=APP_START).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const sCard=mk('div','card');
-  const sondTotal=allSonds.reduce((s,w)=>s+(w.amount||0),0);
-  sCard.innerHTML=`<div class="card-hd sond"><span class="ctitle">Sonderausgaben</span><span class="ctotal" style="color:var(--coral-dk)">${fmt(sondTotal)}</span></div>`;
-  if(!allSonds.length){sCard.innerHTML+=`<div class="empty-hint">Noch keine Sonderausgaben</div>`;}
-  else{
-    // Group by month
-    const byMonth={};
-    allSonds.forEach(w=>{const mk2=(w.date||'').substring(0,7);if(!byMonth[mk2])byMonth[mk2]=[];byMonth[mk2].push(w);});
-    const curKey=`${yr}-${pad(mo+1)}`;
-    Object.keys(byMonth).sort().reverse().forEach(mKey=>{
-      const[ky,km]=mKey.split('-').map(Number);
-      const mTotal=byMonth[mKey].reduce((s,w)=>s+(w.amount||0),0);
-      const mLabel=`${MN[km-1]} ${ky}`;
-      const isOpen=mKey===curKey;
-      const grp=mk('div','');grp.style.cssText='border-bottom:1px solid var(--border)';
-      const ghd=mk('div','');
-      ghd.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;gap:8px;background:var(--rose-bg)';
-      const arr=mk('span','');arr.style.cssText='font-size:16px;transition:transform .2s;color:var(--sub)';arr.textContent='›';if(isOpen)arr.style.transform='rotate(90deg)';
-      ghd.innerHTML=`<span style="font-weight:700;font-size:13px">${mLabel}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--coral-dk);font-weight:700">-${fmt(mTotal)}</span></div>`;
-      ghd.appendChild(arr);
-      const gbody=mk('div','');if(!isOpen)gbody.style.display='none';
-      byMonth[mKey].forEach(w=>{
-        const acc=accs.find(a=>a.id===w.accountId);
-        const r=mk('div','sond-row');
-        r.innerHTML=`<span class="sond-date">${fmtD(w.date)}</span><span class="sond-acc">${esc(acc?.name||'?')}</span><span class="sond-desc">${esc(w.description)||'—'}</span><span class="sond-amt">-${fmt(w.amount)}</span><button class="delbtn">✕</button>`;
-        r.querySelector('.delbtn').onclick=()=>delSond(w.id);gbody.appendChild(r);
-      });
-      ghd.onclick=()=>{const open=gbody.style.display!=='none';gbody.style.display=open?'none':'block';arr.style.transform=open?'':'rotate(90deg)';};
-      grp.appendChild(ghd);grp.appendChild(gbody);sCard.appendChild(grp);
-    });
-  }
-  const addSondBtnEl=mk('button','addbtn coral');addSondBtnEl.textContent='+ Sonderausgabe eintragen';
-  addSondBtnEl.onclick=()=>{
-    const sel=document.getElementById('sondAcc');sel.innerHTML=accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
-    document.getElementById('sondDate').value=today();document.getElementById('sondAmt').value='';document.getElementById('sondDesc').value='';
-    document.getElementById('sondOvl').classList.add('open');
-  };
-  sCard.appendChild(addSondBtnEl);c.appendChild(sCard);
-
-  // Sondereinnahmen card
-  const allSeins=(SAV.specialIncome||[]).filter(w=>(w.date||'').substring(0,7)>=APP_START).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const einCard=mk('div','card');
-  const seinTotal=allSeins.reduce((s,w)=>s+(w.amount||0),0);
-  einCard.innerHTML=`<div class="card-hd sav"><span class="ctitle">Sondereinnahmen</span><span class="ctotal" style="color:var(--mint-dk)">${fmt(seinTotal)}</span></div>`;
-  if(!allSeins.length){einCard.innerHTML+=`<div class="empty-hint">Noch keine Sondereinnahmen</div>`;}
-  else{
-    const byMonth={};
-    allSeins.forEach(w=>{const mk2=(w.date||'').substring(0,7);if(!byMonth[mk2])byMonth[mk2]=[];byMonth[mk2].push(w);});
-    const curKey=`${yr}-${pad(mo+1)}`;
-    Object.keys(byMonth).sort().reverse().forEach(mKey=>{
-      const[ky,km]=mKey.split('-').map(Number);
-      const mTotal=byMonth[mKey].reduce((s,w)=>s+(w.amount||0),0);
-      const mLabel=`${MN[km-1]} ${ky}`;
-      const isOpen=mKey===curKey;
-      const grp=mk('div','');grp.style.cssText='border-bottom:1px solid var(--border)';
-      const ghd=mk('div','');
-      ghd.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;gap:8px;background:var(--mint-bg)';
-      const arr=mk('span','');arr.style.cssText='font-size:16px;transition:transform .2s;color:var(--sub)';arr.textContent='›';if(isOpen)arr.style.transform='rotate(90deg)';
-      ghd.innerHTML=`<span style="font-weight:700;font-size:13px">${mLabel}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--mint-dk);font-weight:700">+${fmt(mTotal)}</span></div>`;
-      ghd.appendChild(arr);
-      const gbody=mk('div','');if(!isOpen)gbody.style.display='none';
-      byMonth[mKey].forEach(w=>{
-        const acc=accs.find(a=>a.id===w.accountId);
-        const r=mk('div','sond-row');
-        r.innerHTML=`<span class="sond-date">${fmtD(w.date)}</span><span class="sond-acc">${esc(acc?.name||'?')}</span><span class="sond-desc">${esc(w.description)||'—'}</span><span class="sond-amt" style="color:var(--mint-dk)">+${fmt(w.amount)}</span><button class="delbtn">✕</button>`;
-        r.querySelector('.delbtn').onclick=()=>delSEin(w.id);gbody.appendChild(r);
-      });
-      ghd.onclick=()=>{const open=gbody.style.display!=='none';gbody.style.display=open?'none':'block';arr.style.transform=open?'':'rotate(90deg)';};
-      grp.appendChild(ghd);grp.appendChild(gbody);einCard.appendChild(grp);
-    });
-  }
-  const addSeinBtnEl=mk('button','addbtn sun');addSeinBtnEl.textContent='+ Sondereinnahme eintragen';
-  addSeinBtnEl.onclick=()=>{
-    const sel=document.getElementById('seinAcc');sel.innerHTML=accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
-    document.getElementById('seinDate').value=today();document.getElementById('seinAmt').value='';document.getElementById('seinDesc').value='';
-    document.getElementById('seinOvl').classList.add('open');
-  };
-  einCard.appendChild(addSeinBtnEl);c.appendChild(einCard);
-}
-
-function buildSavingsChart(accs,colors){
-  if(!SAV)return'';
-  const now=new Date();
-  const monthKeys=[];
-  // Start from April 2026 (app start month)
-  {let y=2026,m=3;while(y<now.getFullYear()||(y===now.getFullYear()&&m<=now.getMonth())){monthKeys.push(`${y}-${pad(m+1)}`);m++;if(m>11){m=0;y++;}}if(!monthKeys.length)monthKeys.push(`${now.getFullYear()}-${pad(now.getMonth()+1)}`);}
-
-  // Calculate running balance per account per month
-  const balByAcc={};
+  const tot=sparSum(M);
+  const totCard=mk('div','card');
+  totCard.innerHTML=`<div style="padding:18px 16px;text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--sub);font-weight:700;margin-bottom:4px">Gesamt auf Sparkonten · ${MN[mo]}</div><div style="font-size:30px;font-weight:800">${fmt(tot)}</div></div>`;
+  c.appendChild(totCard);
+  // Kontostände
+  const balCard=mk('div','card');
+  balCard.innerHTML=`<div class="card-hd sav"><span class="ctitle">Kontostände eintragen</span></div>`;
   accs.forEach(acc=>{
-    let running=acc.startingBalance||0;
-    balByAcc[acc.id]={};
-    monthKeys.forEach(mKey=>{
-      const deps=(SAV.deposits||[]).filter(d=>d.accountId===acc.id&&d.month===mKey).reduce((s,d)=>s+(d.amount||0),0);
-      const mans=(SAV.manualAdditions||[]).filter(d=>d.accountId===acc.id&&(d.date||'').slice(0,7)===mKey).reduce((s,d)=>s+(d.amount||0),0);
-      const seins=(SAV.specialIncome||[]).filter(d=>d.accountId===acc.id&&(d.date||'').slice(0,7)===mKey).reduce((s,d)=>s+(d.amount||0),0);
-      const wds=(SAV.withdrawals||[]).filter(w=>w.accountId===acc.id&&(w.date||'').slice(0,7)===mKey).reduce((s,w)=>s+(w.amount||0),0);
-      running+=deps+mans+seins-wds;
-      balByAcc[acc.id][mKey]=running;
+    const row=mk('div','row');
+    const val=M.sparkonto.balances[acc.id];
+    row.innerHTML=`<span class="rname">${esc(acc.name)}</span><input class="sal-in" type="text" value="${val!=null?fmtVal(val):''}" placeholder="0,00"><button class="delbtn">✕</button>`;
+    row.querySelector('input').addEventListener('change',async e=>{
+      const v=e.target.value.trim();
+      if(v==='')delete M.sparkonto.balances[acc.id];else M.sparkonto.balances[acc.id]=parseAmt(v);
+      await save();buildSavingsPage();
     });
+    row.querySelector('.delbtn').onclick=()=>delSavAcc(acc.id);
+    balCard.appendChild(row);
   });
-
-  const allVals=Object.values(balByAcc).flatMap(m=>Object.values(m));
-  if(!allVals.some(v=>v!==0)){
-    return'<p style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Noch keine Daten</p>';
-  }
-  const minV=Math.min(0,...allVals),maxV=Math.max(...allVals,100);
-  const range=maxV-minV||1;
-  const w=320,h=160,pL=48,pR=8,pT=8,pB=24,cW=w-pL-pR,cH=h-pT-pB;
-  const xOf=i=>pL+(i/(monthKeys.length-1||1))*cW;
-  const yOf=v=>pT+cH-((v-minV)/range)*cH;
-  let svg=`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:160px;overflow:visible">`;
-  // Grid
-  for(let i=0;i<=3;i++){
-    const y=pT+(i/3)*cH,v=maxV-(i/3)*range;
-    svg+=`<line x1="${pL}" y1="${y}" x2="${w-pR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
-    svg+=`<text x="${pL-4}" y="${y+4}" font-size="9" fill="var(--muted)" text-anchor="end">${fmt(v).replace(/[^0-9,]/g,'').split(',')[0]}€</text>`;
-  }
-  // Month labels
-  monthKeys.forEach((mKey,i)=>{
-    if(i%2!==0&&monthKeys.length>6)return;
-    const[,m]=mKey.split('-');
-    svg+=`<text x="${xOf(i)}" y="${h-2}" font-size="9" fill="var(--muted)" text-anchor="middle">${MN[parseInt(m)-1].slice(0,3)}</text>`;
+  if(!accs.length){const eh=mk('div','empty-hint');eh.textContent='Noch kein Konto angelegt';balCard.appendChild(eh);}
+  const[ab,af]=addBtn('acf','+ Konto hinzufügen','sun','fsun');
+  af.innerHTML=`<div class="frow" style="margin:0"><input class="fi fi-h" id="accN" placeholder="Name (z.B. Tagesgeld)"><button class="bsave sun" id="accS">OK</button><button class="bcanc" id="accC">✕</button></div>`;
+  balCard.appendChild(ab);balCard.appendChild(af);
+  af.querySelector('#accS').onclick=addSavAcc;af.querySelector('#accC').onclick=()=>showF('acf',false);
+  c.appendChild(balCard);
+  // Ausgaben vom Sparkonto (nur notiert)
+  const spCard=mk('div','card');
+  const spTot=sparSpent(M);
+  spCard.innerHTML=`<div class="card-hd sond"><span class="ctitle">Ausgaben vom Sparkonto</span><span class="ctotal" style="color:var(--coral-dk)">${fmt(spTot)}</span></div>`;
+  const sp=(M.sparkonto.spendings||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!sp.length){const eh=mk('div','empty-hint');eh.textContent='Noch keine Einträge';spCard.appendChild(eh);}
+  sp.forEach(e2=>{
+    const r=mk('div','erow');r.style.padding='11px 16px';
+    r.innerHTML=`<span class="edate">${fmtD(e2.date)}</span><span class="edesc">${esc(e2.desc)||'—'}</span><span class="eamt" style="color:var(--coral-dk)">-${fmt(e2.amount)}</span><button class="delbtn">✕</button>`;
+    r.querySelector('.delbtn').onclick=async()=>{M.sparkonto.spendings=M.sparkonto.spendings.filter(x=>x.id!==e2.id);await save();buildSavingsPage();};
+    spCard.appendChild(r);
   });
-  // Lines + dots
-  accs.forEach((acc,ai)=>{
-    const pts=monthKeys.map((mKey,i)=>{const v=balByAcc[acc.id]?.[mKey];return v!==undefined?[xOf(i),yOf(v),mKey]:null;}).filter(Boolean);
-    if(pts.length<2)return;
-    const color=colors[ai%colors.length];
-    svg+=`<polyline points="${pts.map(([px,py])=>`${px},${py}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
-    pts.forEach(([x,y,mKey])=>{
-      svg+=`<circle cx="${x}" cy="${y}" r="5" fill="${color}" stroke="white" stroke-width="2" style="cursor:pointer" onclick="window._showSavDetail('${acc.id}','${mKey}','${esc(acc.name)}')"/>`;
-    });
-  });
-  svg+='</svg>';
-  return svg;
+  const[sb,sf]=addBtn('spf','+ Ausgabe notieren','coral','fcoral');
+  sf.innerHTML=`<div class="frow"><input class="fi fi-h" type="text" id="spAmt" placeholder="Betrag (€)"><input class="fi fi-h" type="date" id="spDate"></div><input class="fi" id="spDesc" placeholder="Wofür?" style="margin-bottom:8px"><div class="frow" style="margin:0"><button class="bsave" style="background:var(--coral-dk)" id="spSave">Speichern</button><button class="bcanc" id="spCanc">Abbrechen</button></div>`;
+  spCard.appendChild(sb);spCard.appendChild(sf);
+  sf.querySelector('#spDate').value=today();
+  sf.querySelector('#spSave').onclick=async()=>{
+    const a=parseAmt(document.getElementById('spAmt').value);
+    if(!a||a<=0){snack('Bitte Betrag eingeben');return;}
+    M.sparkonto.spendings.push({id:uid(),date:document.getElementById('spDate').value||today(),desc:document.getElementById('spDesc').value.trim(),amount:a});
+    await save();buildSavingsPage();
+  };
+  sf.querySelector('#spCanc').onclick=()=>showF('spf',false);
+  const hint=mk('div','');hint.style.cssText='padding:8px 16px 12px;font-size:12px;color:var(--muted)';hint.textContent='Nur zur Übersicht — wird nicht vom Kontostand abgezogen.';
+  spCard.appendChild(hint);
+  c.appendChild(spCard);
 }
-
-window._showSavDetail=function(accId,monthKey,accName){
-  const acc=(S.savingsAccounts||[]).find(a=>a.id===accId);
-  document.getElementById('detailTitle').textContent=`${acc?.icon||''} ${accName}`;
-  const body=document.getElementById('detailBody');body.innerHTML='';
-  const deps=(SAV.deposits||[]).filter(d=>d.accountId===accId&&d.month===monthKey);
-  const mans=(SAV.manualAdditions||[]).filter(d=>d.accountId===accId&&(d.date||'').slice(0,7)===monthKey);
-  const wds=(SAV.withdrawals||[]).filter(w=>w.accountId===accId&&(w.date||'').slice(0,7)===monthKey);
-  if(!deps.length&&!mans.length&&!wds.length){body.innerHTML='<div class="empty-hint">Keine Einträge in diesem Monat</div>';}
-  [...deps,...mans].forEach(d=>{const r=mk('div','erow');r.innerHTML=`<span class="edate">${fmtD(d.date)}</span><span class="edesc">${esc(d.desc||d.description||'Einzahlung')}</span><span class="eamt" style="color:var(--mint-dk)">+${fmt(d.amount)}</span>`;body.appendChild(r);});
-  wds.forEach(w=>{const r=mk('div','erow');r.innerHTML=`<span class="edate">${fmtD(w.date)}</span><span class="edesc">${esc(w.description||'Ausgabe')}</span><span class="eamt ein">-${fmt(w.amount)}</span>`;body.appendChild(r);});
-  document.getElementById('detailOvl').classList.add('open');
-};
 
 async function addSavAcc(){
   const n=document.getElementById('accN').value.trim();if(!n){snack('Bitte Namen eingeben');return;}
@@ -1642,6 +1460,7 @@ async function delSavAcc(id){
   if(!acc)return;
   if(!confirm(`"${acc.name}" wirklich löschen?\nAlle Buchungen dieses Kontos werden ebenfalls gelöscht.`))return;
   S.savingsAccounts=(S.savingsAccounts||[]).filter(a=>a.id!==id);
+  if(M?.sparkonto?.balances&&M.sparkonto.balances[id]!=null){delete M.sparkonto.balances[id];await save();}
   if(SAV){
     SAV.deposits=(SAV.deposits||[]).filter(d=>d.accountId!==id);
     SAV.withdrawals=(SAV.withdrawals||[]).filter(w=>w.accountId!==id);
@@ -1740,7 +1559,11 @@ function navTo(delta){
   statsLoaded=false;savLoaded=false;
   document.getElementById('mlabel').textContent=`${MN[mo]} ${yr}`;
   closeAllSheets();
-  init();
+  init().then(()=>{
+    const active=document.querySelector('.page.active')?.id;
+    if(active==='page-stats'){statsLoaded=true;buildStats();}
+    if(active==='page-savings'){savLoaded=true;buildSavingsPage();}
+  });
 }
 document.getElementById('prevBtn').addEventListener('click',()=>navTo(-1));
 document.getElementById('nextBtn').addEventListener('click',()=>navTo(1));
