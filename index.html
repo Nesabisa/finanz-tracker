@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Mein Budget 🌸</title>
+<title>Mein Budget</title>
 <script>
 // Kill stale PWA caches so new versions actually arrive
 if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister().catch(()=>{}))).catch(()=>{});}
@@ -14,21 +14,21 @@ if('caches'in window){caches.keys().then(ns=>ns.forEach(n=>caches.delete(n).catc
 </script>
 <style>
 :root{
-  --rose:#ffc2d1;   --rose-bg:#fff0f5;  --rose-dk:#d4557a;
-  --lav:#dbbef8;    --lav-bg:#f8f0ff;   --lav-dk:#8040c8;
-  --peach:#ffc89a;  --peach-bg:#fff6ec; --peach-dk:#c86020;
-  --sun:#f8e090;    --sun-bg:#fefce8;   --sun-dk:#a87800;
-  --coral:#f8a8b0;  --coral-bg:#fff0f2; --coral-dk:#c03050;
-  --mint-dk:#2a9e70;--mint-bg:#f0fdf8;
-  --bg:#fdf5f8; --white:#fff; --border:#f0dde8;
-  --text:#3a1828; --sub:#8a5870; --muted:#c4a0b4;
-  --shadow:0 2px 14px rgba(180,60,110,.1);
+  --rose:#dcb5a5;   --rose-bg:#f9f0ea;  --rose-dk:#b0755c;
+  --lav:#b8c4b0;    --lav-bg:#f1f4ee;   --lav-dk:#6d8a64;
+  --peach:#dcc09a;  --peach-bg:#f9f3e8; --peach-dk:#a87c48;
+  --sun:#d6cba4;    --sun-bg:#f8f5ea;   --sun-dk:#8f7d42;
+  --coral:#d2a49b;  --coral-bg:#f8efec; --coral-dk:#a55a48;
+  --mint-dk:#4f7d5c;--mint-bg:#eef4ef;
+  --bg:#fdf8f2; --white:#fffdfb; --border:#eadfd2;
+  --text:#3d342a; --sub:#8a796a; --muted:#c2b3a2;
+  --shadow:0 2px 12px rgba(150,110,70,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(to bottom,#fff0f5 0%,#f8f0ff 50%,#fff6ec 100%) fixed;color:var(--text);min-height:100vh;padding-bottom:72px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:72px}
 
 /* NAV */
-.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:50;box-shadow:0 -2px 10px rgba(180,60,110,.08)}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:50;box-shadow:0 -2px 10px rgba(150,110,70,.06)}
 .bnav button{flex:1;padding:8px 4px 10px;border:none;background:none;font-size:10px;font-weight:700;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;letter-spacing:.3px;text-transform:uppercase;transition:color .2s}
 .bnav button .ni{font-size:22px}
 .bnav button.active{color:var(--rose-dk)}
@@ -38,13 +38,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* HEADER */
 .hdr{
-  background:
-    radial-gradient(ellipse 75% 65% at 18% 38%, rgba(255,255,255,.42) 0%, transparent 62%),
-    radial-gradient(ellipse 60% 52% at 80% 30%, rgba(255,255,255,.38) 0%, transparent 56%),
-    radial-gradient(ellipse 45% 38% at 55% 82%, rgba(255,255,255,.22) 0%, transparent 50%),
-    radial-gradient(ellipse 38% 32% at 68% 12%, rgba(255,255,255,.28) 0%, transparent 48%),
-    radial-gradient(ellipse 30% 25% at 35% 60%, rgba(255,255,255,.18) 0%, transparent 45%),
-    linear-gradient(to right,#ffc89a 0%,#ffc2d1 25%,#dbbef8 50%,#ffc2d1 75%,#ffc89a 100%);
+  background:linear-gradient(to bottom,#f4ead9,#fbf5eb);
+  border-bottom:1px solid var(--border);
   padding:18px 16px 24px;position:relative;overflow:hidden
 }
 .hrt{font-size:42px;line-height:1;flex-shrink:1;min-width:36px;text-align:center;opacity:.28;cursor:pointer;transition:opacity .2s}
@@ -58,11 +53,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .scard{background:rgba(255,255,255,.32);border-radius:14px;padding:11px 8px;text-align:center;backdrop-filter:blur(4px)}
 .slbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;opacity:.75}
 .sval{font-size:17px;font-weight:800;color:var(--text)}
-.sval.pos{color:#1a6040}.sval.neg{color:var(--coral-dk)}
+.sval.pos{color:var(--mint-dk)}.sval.neg{color:var(--coral-dk)}
 
 /* PAGE HEADERS */
-.page-hdr{padding:20px 16px 16px;background:linear-gradient(135deg,var(--lav) 0%,var(--rose) 100%)}
-.page-hdr.sav-hdr{background:linear-gradient(135deg,var(--sun) 0%,var(--peach) 100%)}
+.page-hdr{padding:20px 16px 16px;background:linear-gradient(to bottom,#f4ead9,#fbf5eb);border-bottom:1px solid var(--border)}
+.page-hdr.sav-hdr{background:linear-gradient(to bottom,#f4ead9,#fbf5eb)}
 .page-hdr h2{font-size:22px;font-weight:800;color:var(--text);margin-bottom:2px}
 .page-hdr p{font-size:13px;color:var(--sub)}
 
@@ -95,7 +90,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @media(hover:hover){.row:hover .edit-ico,.sub-row:hover .edit-ico{opacity:1;pointer-events:auto}}
 
 /* INPUTS */
-.sal-in{width:120px;text-align:right;border:1.5px solid var(--border);border-radius:10px;padding:6px 10px;font-size:14px;font-weight:700;color:var(--mint-dk);background:#f9f6f8}
+.sal-in{width:120px;text-align:right;border:1.5px solid var(--border);border-radius:10px;padding:6px 10px;font-size:14px;font-weight:700;color:var(--mint-dk);background:#f8f4ec}
 .sal-in:focus{outline:none;border-color:var(--rose-dk);background:var(--white)}
 .amt-in{width:88px;text-align:right;border:1.5px solid transparent;border-radius:8px;padding:5px 8px;font-size:14px;font-weight:700;background:transparent;color:var(--text)}
 .amt-in:focus{outline:none;border-color:var(--lav-dk);background:var(--white)}
@@ -103,7 +98,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* DRAG SORT */
 .drag-handle{display:flex;align-items:center;justify-content:center;padding:0 7px;cursor:grab;flex-shrink:0;touch-action:none;color:var(--muted);opacity:.35;-webkit-user-select:none;user-select:none;transition:opacity .15s}
 .drag-handle:active{cursor:grabbing;opacity:.9}
-.drag-active{opacity:.4!important;background:rgba(219,190,248,.18)!important;transform:scale(1.01);box-shadow:0 4px 16px rgba(139,60,200,.15)!important}
+.drag-active{opacity:.4!important;background:rgba(184,196,176,.2)!important;transform:scale(1.01);box-shadow:0 4px 16px rgba(109,138,100,.15)!important}
 .drop-above{box-shadow:inset 0 3px 0 var(--lav-dk)!important}
 .drop-below{box-shadow:inset 0 -3px 0 var(--lav-dk)!important}
 
@@ -133,10 +128,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .bdg-ein{background:var(--peach-bg);color:var(--peach-dk)}
 
 /* BUTTONS */
-.delbtn{background:none;border:none;color:#e0c8d4;cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;flex-shrink:0}
+.delbtn{background:none;border:none;color:#d5c5b2;cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;flex-shrink:0}
 .delbtn:hover{color:#e53935}
 .addbtn{display:flex;align-items:center;gap:6px;width:100%;padding:10px 16px;background:none;border:none;font-size:14px;font-weight:600;cursor:pointer;text-align:left;color:var(--sub);transition:background .15s}
-.addbtn:hover{background:#fdf0f4}
+@media(hover:hover){.addbtn:hover{background:#f7f0e6}}
 .addbtn.rose{color:var(--rose-dk)}.addbtn.lav{color:var(--lav-dk)}.addbtn.peach{color:var(--peach-dk)}.addbtn.sun{color:var(--sun-dk)}.addbtn.coral{color:var(--coral-dk)}
 
 /* FORMS */
@@ -158,7 +153,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chip.on-ein{background:var(--peach-bg);border-color:var(--peach-dk);color:var(--peach-dk)}
 
 /* SHEET */
-.overlay{display:none;position:fixed;inset:0;background:rgba(50,10,30,.45);z-index:100;align-items:flex-end;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;background:rgba(45,35,22,.45);z-index:100;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
 .sheet{background:var(--white);border-radius:24px 24px 0 0;width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column}
 .shandle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 4px;flex-shrink:0}
@@ -193,7 +188,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* STATS */
 .expand-block{background:var(--white);border-radius:16px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
 .exp-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer}
-@media(hover:hover){.exp-hd:hover{background:#fdf5f8}}
+@media(hover:hover){.exp-hd:hover{background:#f8f2e8}}
 .exp-title{font-size:15px;font-weight:700}
 .exp-ico{font-size:14px;color:var(--muted);transition:transform .2s}
 .exp-ico.open{transform:rotate(90deg)}
@@ -217,7 +212,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .acc-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .acc-start-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .acc-start-lbl{font-size:12px;color:var(--sub)}
-.acc-start-in{width:110px;text-align:right;border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:13px;font-weight:600;background:#f9f6f8;color:var(--text)}
+.acc-start-in{width:110px;text-align:right;border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:13px;font-weight:600;background:#f8f4ec;color:var(--text)}
 .acc-start-in:focus{outline:none;border-color:var(--sun-dk);background:var(--white)}
 
 .chart-wrap{background:var(--white);border-radius:16px;padding:14px 14px 8px;box-shadow:var(--shadow);margin-bottom:10px}
@@ -255,11 +250,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="page active" id="page-budget">
   <div class="hdr">
     <div class="mnav">
-      <span class="hrt" id="hrt1">💜</span>
       <button class="nbtn" id="prevBtn">&#8249;</button>
       <span class="mlabel" id="mlabel"></span>
       <button class="nbtn" id="nextBtn">&#8250;</button>
-      <span class="hrt" id="hrt2">💜</span>
     </div>
     <div class="sumgrid">
       <div class="scard"><div class="slbl">Einnahmen</div><div class="sval" id="sInc">€0</div></div>
@@ -267,18 +260,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="scard"><div class="slbl">Übrig</div><div class="sval" id="sBal">€0</div></div>
     </div>
   </div>
-  <div class="content" id="content"><div class="loading">Lade... 🌸</div></div>
+  <div class="content" id="content"><div class="loading">Lade…</div></div>
 </div>
 
 <!-- PAGE: STATISTIK -->
 <div class="page" id="page-stats">
-  <div class="page-hdr"><h2>📊 Statistik</h2><p>Ausgaben über die Monate</p></div>
+  <div class="page-hdr"><h2>Statistik</h2><p>Ausgaben über die Monate</p></div>
   <div class="content" id="statsContent"><div class="loading">Lade...</div></div>
 </div>
 
 <!-- PAGE: SPAREN -->
 <div class="page" id="page-savings">
-  <div class="page-hdr sav-hdr"><h2>🌱 Sparen</h2><p>Kontenübersicht & Entwicklung</p></div>
+  <div class="page-hdr sav-hdr"><h2>Sparen</h2><p>Kontenübersicht & Entwicklung</p></div>
   <div class="content" id="savContent"><div class="loading">Lade...</div></div>
 </div>
 
@@ -321,8 +314,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <input class="fi" id="eDesc" placeholder="Beschreibung (optional)" autocomplete="off" style="margin-bottom:8px">
         <div class="chips" style="margin-bottom:12px">
-          <div class="chip" id="chipFix">🔄 Wiederholt sich</div>
-          <div class="chip" id="chipEin">💫 Einmalausgabe</div>
+          <div class="chip" id="chipFix">Wiederholt sich</div>
+          <div class="chip" id="chipEin">Einmalausgabe</div>
         </div>
         <div class="frow" style="margin:0">
           <button class="bsave" id="saveEntry">Speichern</button>
@@ -357,7 +350,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="overlay" id="sondOvl">
   <div class="sheet" style="max-height:50vh">
     <div class="shandle"></div>
-    <div class="shd"><span class="stitle">💸 Sonderausgabe</span><button class="xbtn" id="closeSond">&#x2715;</button></div>
+    <div class="shd"><span class="stitle">Sonderausgabe</span><button class="xbtn" id="closeSond">&#x2715;</button></div>
     <div class="sform fcoral" style="display:block;padding:20px">
       <div class="frow">
         <input class="fi fi-h" type="text" id="sondAmt" placeholder="Betrag (€)">
@@ -377,7 +370,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="overlay" id="seinOvl">
   <div class="sheet" style="max-height:50vh">
     <div class="shandle"></div>
-    <div class="shd"><span class="stitle">🌱 Sondereinnahme</span><button class="xbtn" id="closeSein">&#x2715;</button></div>
+    <div class="shd"><span class="stitle">Sondereinnahme</span><button class="xbtn" id="closeSein">&#x2715;</button></div>
     <div class="sform fsun" style="display:block;padding:20px">
       <div class="frow">
         <input class="fi fi-h" type="text" id="seinAmt" placeholder="Betrag (€)">
@@ -397,7 +390,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="overlay" id="delOvl">
   <div class="sheet" style="max-height:230px">
     <div class="del-conf">
-      <p>🗑️ Diesen Eintrag löschen?</p>
+      <p>Diesen Eintrag löschen?</p>
       <div class="del-btns">
         <button class="bsave" style="flex:1" id="delNow">Nur diesen Monat</button>
         <button class="bsave" style="flex:1;background:linear-gradient(135deg,#c62828,#e53935)" id="delPerm">+ Wiederholung löschen</button>
@@ -597,8 +590,8 @@ async function undoLast(){
   M=m;if(sav!==null)SAV=sav;
   render();renderFxBody();
   try{await save();if(sav!==null)await savSAV();}
-  catch(e){console.error('undo:',e);snack('⚠️ Rückgängig fehlgeschlagen');}
-  snack('↩ Rückgängig gemacht ✓');
+  catch(e){console.error('undo:',e);snack('Rückgängig fehlgeschlagen');}
+  snack('Rückgängig gemacht');
 }
 function showF(id,show){const f=document.getElementById(id);if(f)f.style.display=show?'block':'none';}
 function parseAmt(v){return parseFloat((v||'').replace(',','.'))||0;}
@@ -725,7 +718,7 @@ async function changeNavEmoji(){
 // Income section
 function buildIncome(){
   const sec=mk('div','card');
-  sec.innerHTML=`<div class="card-hd inc"><span class="ctitle">💰 Einnahmen</span><span class="ctotal" style="color:var(--mint-dk)">${fmt(totalInc())}</span></div>
+  sec.innerHTML=`<div class="card-hd inc"><span class="ctitle">Einnahmen</span><span class="ctotal" style="color:var(--mint-dk)">${fmt(totalInc())}</span></div>
     <div class="row"><span class="ico">💰</span><span class="rname">Gehalt</span>
     <input class="sal-in" type="text" id="salIn" value="${fmtVal(M.salary)}" placeholder="0,00"></div>`;
   const list=mk('div');
@@ -768,7 +761,7 @@ function attachAccordion(fc,row,sec){
   // For items with no subs, add amount editor at top of expansion
   if(!fc.subs||fc.subs.length===0){
     const amtRow=mk('div','');
-    amtRow.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0 10px;border-bottom:1px solid rgba(139,64,200,.1)';
+    amtRow.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0 10px;border-bottom:1px solid rgba(109,138,100,.15)';
     amtRow.innerHTML=`<span style="font-size:13px;color:var(--sub);flex:1">Betrag</span><input type="text" class="fi" value="${fmtVal(fc.amount)}" placeholder="0,00" style="width:90px;font-size:13px;padding:5px 8px" id="fxamt_${fc.id}">`;
     amtRow.querySelector('input').addEventListener('blur',e=>updFxAmt(fc.id,parseAmt(e.target.value)));
     exp.appendChild(amtRow);
@@ -780,7 +773,7 @@ function attachAccordion(fc,row,sec){
     const addTrig=exp.querySelector('.add-trig');
     (fc.subs||[]).forEach(si=>{
       const sr=mk('div','isr');
-      sr.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(139,64,200,.07)';
+      sr.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(109,138,100,.12)';
       const schkEl=mk('div',`schk${si.checked?' done':''}`);
       schkEl.style.cssText='width:22px;height:22px;flex-shrink:0;font-size:12px';schkEl.textContent='✓';
       const nameIn=mk('input');nameIn.type='text';nameIn.value=si.name;nameIn.className='fi';nameIn.style.cssText='flex:1;font-size:13px;padding:5px 8px;min-width:0';
@@ -824,7 +817,7 @@ function buildFixed(){
   const sec=mk('div','card');
   const fixItems=(M.fixedCosts||[]).filter(fc=>!isSavItem(fc));
   const tot=fixItems.reduce((s,fc)=>s+effAmt(fc),0);
-  const hd=mk('div','card-hd fix');hd.innerHTML=`<span class="ctitle">🏷️ Fixe Ausgaben</span><span class="ctotal">${fmt(tot)}</span>`;
+  const hd=mk('div','card-hd fix');hd.innerHTML=`<span class="ctitle">Fixe Ausgaben</span><span class="ctotal">${fmt(tot)}</span>`;
   sec.appendChild(hd);
   for(const fc of fixItems){
     const st=checkedSt(fc);
@@ -881,7 +874,7 @@ function buildFixed(){
         document.getElementById('fa').value=t.def||'';
         selectedFxTplId=t.id;
         tplWrap.querySelectorAll('div[style*="border-radius:20px"]').forEach(c=>{c.style.borderColor='var(--border)';c.style.background='var(--lav-bg)';});
-        chip.style.borderColor='var(--lav-dk)';chip.style.background='rgba(139,60,200,.12)';
+        chip.style.borderColor='var(--lav-dk)';chip.style.background='rgba(109,138,100,.12)';
       };
       tplWrap.appendChild(chip);
     });
@@ -896,7 +889,7 @@ function buildSparen(){
   const sec=mk('div','card');
   const savItems=(M.fixedCosts||[]).filter(isSavItem);
   const tot=savItems.reduce((s,fc)=>s+effAmt(fc),0);
-  const hd=mk('div','card-hd sav');hd.innerHTML=`<span class="ctitle">🌱 Sparen</span><span class="ctotal">${fmt(tot)}</span>`;
+  const hd=mk('div','card-hd sav');hd.innerHTML=`<span class="ctitle">Sparen</span><span class="ctotal">${fmt(tot)}</span>`;
   sec.appendChild(hd);
   for(const fc of savItems){
     const st=checkedSt(fc);
@@ -987,7 +980,7 @@ function renderFxBody(){
   addWrap.innerHTML=`
     <div style="display:flex;gap:6px">
       <button id="fxAddSubTrig" class="addbtn lav" style="flex:1">&#43; Unterposten hinzufügen</button>
-      <button id="saveFxTplBtn" class="addbtn lav" style="width:auto;flex-shrink:0;font-size:13px;padding:10px 14px">💾 Vorlage</button>
+      <button id="saveFxTplBtn" class="addbtn lav" style="width:auto;flex-shrink:0;font-size:13px;padding:10px 14px">Vorlage speichern</button>
     </div>
     <div id="fxAddForm" class="flav" style="display:none;padding:14px;border-radius:12px;margin-top:8px">
       <div class="frow">
@@ -1017,7 +1010,7 @@ async function toggleFxDirect(id){
   const fc=M?.fixedCosts?.find(f=>f.id===id);if(!fc)return;
   fc.checked=!fc.checked;fc.paidDate=fc.checked?today():null;
   renderFxBody();render(); // sofort zeigen
-  try{await save();}catch(e){console.error('toggleFxDirect:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  try{await save();}catch(e){console.error('toggleFxDirect:',e);snack('Speichern fehlgeschlagen');}
 }
 async function toggleSub(fid,sid){
   const fc=M?.fixedCosts?.find(f=>f.id===fid),si=fc?.subs?.find(s=>s.id===sid);if(!si)return;
@@ -1037,7 +1030,7 @@ async function toggleSub(fid,sid){
     await savSAV();savLoaded=false;
   }
   await save();
-  }catch(e){console.error('toggleSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  }catch(e){console.error('toggleSub:',e);snack('Speichern fehlgeschlagen');}
 }
 async function toggleAllSubs(fid){
   const fc=M?.fixedCosts?.find(f=>f.id===fid);if(!fc||!fc.subs?.length)return;
@@ -1060,7 +1053,7 @@ async function toggleAllSubs(fid){
     }
     if(savChanged){await savSAV();savLoaded=false;}
     await save();
-  }catch(e){console.error('toggleAllSubs:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  }catch(e){console.error('toggleAllSubs:',e);snack('Speichern fehlgeschlagen');}
 }
 async function updFxAmt(id,a){
   const fc=M.fixedCosts.find(f=>f.id===id);if(fc)fc.amount=a;
@@ -1103,7 +1096,7 @@ async function updFxIcon(id,ico){
   document.getElementById('fxIconBtn').textContent=ico;
   render();
   try{await Promise.all([save(),saveSett()]);}
-  catch(e){snack('⚠️ Speichern fehlgeschlagen');}
+  catch(e){snack('Speichern fehlgeschlagen');}
 }
 async function addSub(){
   const n=document.getElementById('subName').value.trim(),a=parseAmt(document.getElementById('subAmt').value);
@@ -1121,7 +1114,7 @@ async function addSub(){
   showF('fxAddForm',false);renderFxBody();render();
   snack('Hinzugefügt ✓',backup);
   try{await Promise.all([save(),saveSett()]);}
-  catch(e){console.error('addSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  catch(e){console.error('addSub:',e);snack('Speichern fehlgeschlagen');}
 }
 async function delSub(fid,sid){
   const backup={m:clone(M),sav:SAV?clone(SAV):null};
@@ -1130,7 +1123,7 @@ async function delSub(fid,sid){
   renderFxBody();render();
   snack('Gelöscht',backup);
   try{await Promise.all([save(),saveSett()]);}
-  catch(e){console.error('delSub:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  catch(e){console.error('delSub:',e);snack('Speichern fehlgeschlagen');}
 }
 async function delFx(id){
   const backup={m:clone(M),sav:null};
@@ -1138,7 +1131,7 @@ async function delFx(id){
   render();
   snack('Gelöscht',backup);
   try{await Promise.all([save(),saveSett()]);}
-  catch(e){console.error('delFx:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  catch(e){console.error('delFx:',e);snack('Speichern fehlgeschlagen');}
 }
 async function addFx(){
   const n=document.getElementById('fn').value.trim(),a=parseAmt(document.getElementById('fa').value);
@@ -1161,7 +1154,7 @@ async function saveFxTemplate(){
     subs:(fc.subs||[]).map(si=>({id:uid(),name:si.name,def:si.amount||0,accId:si.accId||''}))
   };
   S.fxTemplates.push(tpl);
-  await saveSett();snack('💾 Vorlage gespeichert!');
+  await saveSett();snack('Vorlage gespeichert');
 }
 async function delFxTemplate(id){
   S.fxTemplates=(S.fxTemplates||[]).filter(t=>t.id!==id);
@@ -1172,7 +1165,7 @@ async function delFxTemplate(id){
 function buildVariable(){
   const sec=mk('div','card');
   const tot=(M.variableEntries||[]).reduce((s,e)=>s+(e.amount||0),0);
-  sec.innerHTML=`<div class="card-hd var"><span class="ctitle">💳 Variable Ausgaben</span><span class="ctotal">${fmt(tot)}</span></div>`;
+  sec.innerHTML=`<div class="card-hd var"><span class="ctitle">Variable Ausgaben</span><span class="ctotal">${fmt(tot)}</span></div>`;
   for(const cat of(S.categories||[])){
     const t=catTotal(cat.id),r=mk('div','row var-row');
     r.innerHTML=`<span class="drag-handle" title="Verschieben">${DRAG_ICO}</span><span class="ico ico-btn" title="Icon ändern">${cat.icon||'🌟'}</span>
@@ -1203,7 +1196,7 @@ function buildVariable(){
       } else {
         entries.forEach(en=>{
           const er=mk('div','cer');
-          er.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(200,96,32,.08);font-size:13px';
+          er.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(168,124,72,.15);font-size:13px';
           er.innerHTML=`<span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${fmtD(en.date)}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(en.description)||'—'}</span><span style="font-weight:700;color:var(--sub);white-space:nowrap">${fmt(en.amount)}</span><button style="background:none;border:none;font-size:12px;cursor:pointer;padding:0 2px;opacity:.4">✏️</button><button class="delbtn" style="font-size:12px">✕</button>`;
           er.querySelectorAll('button')[0].onclick=ev=>{ev.stopPropagation();editEntry(en.id);document.getElementById('varOvl').classList.add('open');};
           er.querySelector('.delbtn').onclick=()=>{if(en.isFix){pendingDel={id:en.id};document.getElementById('delOvl').classList.add('open');}else delEntry(en.id);};
@@ -1280,11 +1273,11 @@ function renderVarBody(){
   const entries=(M.variableEntries||[]).filter(e=>e.categoryId===activeCat.id).sort((a,b)=>(b.date||'')<(a.date||'')?-1:1);
   document.getElementById('varTotal').textContent=fmt(entries.reduce((s,e)=>s+(e.amount||0),0));
   const body=document.getElementById('varBody');body.innerHTML='';
-  if(!entries.length){body.innerHTML='<div class="empty-hint">🌸 Noch keine Einträge</div>';return;}
+  if(!entries.length){body.innerHTML='<div class="empty-hint">Noch keine Einträge</div>';return;}
   for(const e of entries){
     const r=mk('div','erow');
     r.innerHTML=`<span class="edate">${fmtD(e.date)}</span><span class="edesc">${esc(e.description)||'—'}</span>
-      ${e.isEin?'<span class="bdg bdg-ein">💫 Einmalig</span>':''}${e.isFix?'<span class="bdg bdg-fix">🔄 Fix</span>':''}
+      ${e.isEin?'<span class="bdg bdg-ein">Einmalig</span>':''}${e.isFix?'<span class="bdg bdg-fix">Fix</span>':''}
       <span class="eamt${e.isEin?' ein':''}">${fmt(e.amount)}</span>
       <button style="background:none;border:none;font-size:13px;cursor:pointer;padding:0 3px;opacity:.35;flex-shrink:0" title="Bearbeiten">✏️</button>
       <button class="delbtn">✕</button>`;
@@ -1336,7 +1329,7 @@ async function delEntryAndRec(id){
 
 // ── STATS PAGE
 async function buildStats(){
-  const c=document.getElementById('statsContent');c.innerHTML='<div class="loading">Lade... 🌸</div>';
+  const c=document.getElementById('statsContent');c.innerHTML='<div class="loading">Lade…</div>';
   // Alle Monate aus Firebase laden
   let allMonths=[];
   try{
@@ -1413,7 +1406,7 @@ async function buildStats(){
     return items;
   }));
   // Variable Breakdown (gesamt)
-  c.appendChild(buildStatsBlock('💳 Variable Ausgaben (Gesamt)','peach',allMonths,m=>{
+  c.appendChild(buildStatsBlock('Variable Ausgaben (Gesamt)','peach',allMonths,m=>{
     const items={};
     (m.data.variableEntries||[]).forEach(e=>{const cat=S.categories.find(c=>c.id===e.categoryId);const nm=cat?`${cat.icon||''} ${cat.name}`:e.categoryId;items[nm]=(items[nm]||0)+(e.amount||0);});
     return items;
@@ -1490,7 +1483,7 @@ async function buildSavingsPage(){
   const allSonds=(SAV.withdrawals||[]).filter(w=>(w.date||'').substring(0,7)>=APP_START).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const sCard=mk('div','card');
   const sondTotal=allSonds.reduce((s,w)=>s+(w.amount||0),0);
-  sCard.innerHTML=`<div class="card-hd sond"><span class="ctitle">💸 Sonderausgaben</span><span class="ctotal" style="color:var(--coral-dk)">${fmt(sondTotal)}</span></div>`;
+  sCard.innerHTML=`<div class="card-hd sond"><span class="ctitle">Sonderausgaben</span><span class="ctotal" style="color:var(--coral-dk)">${fmt(sondTotal)}</span></div>`;
   if(!allSonds.length){sCard.innerHTML+=`<div class="empty-hint">Noch keine Sonderausgaben</div>`;}
   else{
     // Group by month
@@ -1531,7 +1524,7 @@ async function buildSavingsPage(){
   const allSeins=(SAV.specialIncome||[]).filter(w=>(w.date||'').substring(0,7)>=APP_START).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const einCard=mk('div','card');
   const seinTotal=allSeins.reduce((s,w)=>s+(w.amount||0),0);
-  einCard.innerHTML=`<div class="card-hd sav"><span class="ctitle">🌱 Sondereinnahmen</span><span class="ctotal" style="color:var(--mint-dk)">${fmt(seinTotal)}</span></div>`;
+  einCard.innerHTML=`<div class="card-hd sav"><span class="ctitle">Sondereinnahmen</span><span class="ctotal" style="color:var(--mint-dk)">${fmt(seinTotal)}</span></div>`;
   if(!allSeins.length){einCard.innerHTML+=`<div class="empty-hint">Noch keine Sondereinnahmen</div>`;}
   else{
     const byMonth={};
@@ -1655,7 +1648,7 @@ async function delSavAcc(id){
     SAV.manualAdditions=(SAV.manualAdditions||[]).filter(m=>m.accountId!==id);
   }
   try{await Promise.all([saveSett(),SAV?savSAV():Promise.resolve()]);}
-  catch(e){console.error('delSavAcc:',e);snack('⚠️ Speichern fehlgeschlagen');}
+  catch(e){console.error('delSavAcc:',e);snack('Speichern fehlgeschlagen');}
   buildSavingsPage();
 }
 async function saveManualAddition(){
@@ -1723,7 +1716,7 @@ document.getElementById('importFile').addEventListener('change',async e=>{
     await setDoc(settRef(),data.settings);
     if(data.savings)await setDoc(savRef(),data.savings);
     for(const[key,mData]of Object.entries(data.months||{})){await setDoc(doc(db,'personal_months',key),mData);}
-    snack('Import erfolgreich! 🌸');
+    snack('Import erfolgreich');
     S=null;await init();
   }catch(err){snack('Fehler beim Import ❌');console.error(err);}
   e.target.value='';
@@ -1795,7 +1788,7 @@ async function init(){
   if(isLoading)return;
   isLoading=true;
   ['prevBtn','nextBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.opacity='.4';});
-  document.getElementById('content').innerHTML='<div class="loading">Lade... 🌸</div>';
+  document.getElementById('content').innerHTML='<div class="loading">Lade…</div>';
   try{
     if(!S)await loadSettings();
     M=null;
@@ -1805,7 +1798,7 @@ async function init(){
     console.error('Ladefehler:',e);
     const errDiv=document.createElement('div');
     errDiv.style.cssText='text-align:center;padding:40px;color:var(--sub)';
-    errDiv.innerHTML=`⚠️ Laden fehlgeschlagen.<br><small>${e?.message||'Internetverbindung prüfen.'}</small><br>`;
+    errDiv.innerHTML=`Laden fehlgeschlagen.<br><small>${e?.message||'Internetverbindung prüfen.'}</small><br>`;
     const retryBtn=document.createElement('button');
     retryBtn.className='bsave';retryBtn.style.cssText='margin-top:14px;padding:10px 24px';
     retryBtn.textContent='🔄 Nochmal laden';retryBtn.onclick=()=>{isLoading=false;init();};
