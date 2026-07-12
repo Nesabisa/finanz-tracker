@@ -14,14 +14,14 @@ if('caches'in window){caches.keys().then(ns=>ns.forEach(n=>caches.delete(n).catc
 </script>
 <style>
 :root{
-  --rose:#dcb5a5;   --rose-bg:#f9f0ea;  --rose-dk:#b0755c;
-  --lav:#b8c4b0;    --lav-bg:#f1f4ee;   --lav-dk:#6d8a64;
-  --peach:#dcc09a;  --peach-bg:#f9f3e8; --peach-dk:#a87c48;
-  --sun:#d6cba4;    --sun-bg:#f8f5ea;   --sun-dk:#8f7d42;
-  --coral:#d2a49b;  --coral-bg:#f8efec; --coral-dk:#a55a48;
+  --rose:#e5bfc4;   --rose-bg:#f9eff1;  --rose-dk:#b96a75;
+  --lav:#c3d1bd;    --lav-bg:#f0f4ed;   --lav-dk:#6f8a68;
+  --peach:#e0b09a;  --peach-bg:#f9efe8; --peach-dk:#b4633f;
+  --sun:#ddc9a3;    --sun-bg:#f8f3e6;   --sun-dk:#9a7c40;
+  --coral:#d9a08f;  --coral-bg:#f8ece7; --coral-dk:#a54a32;
   --mint-dk:#4f7d5c;--mint-bg:#eef4ef;
-  --bg:#fdf8f2; --white:#fffdfb; --border:#eadfd2;
-  --text:#3d342a; --sub:#8a796a; --muted:#c2b3a2;
+  --bg:#faf5ee; --white:#fffdfa; --border:#ecdfd0;
+  --text:#3f362c; --sub:#8c7d6d; --muted:#c2b3a2;
   --shadow:0 2px 12px rgba(150,110,70,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,7 +38,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* HEADER */
 .hdr{
-  background:linear-gradient(to bottom,#f4ead9,#fbf5eb);
+  background:linear-gradient(to bottom,#f7ece4,#fbf6ef);
   border-bottom:1px solid var(--border);
   padding:18px 16px 24px;position:relative;overflow:hidden
 }
@@ -56,8 +56,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sval.pos{color:var(--mint-dk)}.sval.neg{color:var(--coral-dk)}
 
 /* PAGE HEADERS */
-.page-hdr{padding:20px 16px 16px;background:linear-gradient(to bottom,#f4ead9,#fbf5eb);border-bottom:1px solid var(--border)}
-.page-hdr.sav-hdr{background:linear-gradient(to bottom,#f4ead9,#fbf5eb)}
+.page-hdr{padding:20px 16px 16px;background:linear-gradient(to bottom,#f7ece4,#fbf6ef);border-bottom:1px solid var(--border)}
+.page-hdr.sav-hdr{background:linear-gradient(to bottom,#f7ece4,#fbf6ef)}
 .page-hdr h2{font-size:22px;font-weight:800;color:var(--text);margin-bottom:2px}
 .page-hdr p{font-size:13px;color:var(--sub)}
 
@@ -141,9 +141,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .fi{border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:14px;background:var(--white);color:var(--text);width:100%}
 .fi:focus{outline:none;border-color:var(--lav-dk)}
 .fi-h{flex:1}
-.bsave{background:linear-gradient(135deg,var(--rose-dk),var(--lav-dk));color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer}
+.bsave{background:var(--rose-dk);color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer}
 .bsave:hover{opacity:.9}
-.bsave.sun{background:linear-gradient(135deg,var(--sun-dk),var(--peach-dk))}
+.bsave.sun{background:var(--sun-dk)}
 .bcanc{background:var(--bg);color:var(--sub);border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;font-size:14px;cursor:pointer}
 
 /* CHIPS */
@@ -198,10 +198,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .bar-lbl{font-size:13px;width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar-bg{flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden}
 .bar-fill{height:100%;border-radius:5px}
-.bar-fill.rose{background:linear-gradient(90deg,var(--rose),var(--rose-dk))}
-.bar-fill.lav{background:linear-gradient(90deg,var(--lav),var(--lav-dk))}
-.bar-fill.peach{background:linear-gradient(90deg,var(--peach),var(--peach-dk))}
-.bar-fill.sun{background:linear-gradient(90deg,var(--sun),var(--sun-dk))}
+.bar-fill.rose{background:var(--rose-dk)}
+.bar-fill.lav{background:var(--lav-dk)}
+.bar-fill.peach{background:var(--peach-dk)}
+.bar-fill.sun{background:var(--sun-dk)}
 .bar-val{font-size:13px;font-weight:700;width:72px;text-align:right;flex-shrink:0}
 
 /* SAVINGS */
@@ -359,7 +359,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input class="fi" id="sondDesc" placeholder="Wofür? (z.B. Neues Sofa)" style="margin-bottom:8px">
       <select class="fi" id="sondAcc" style="margin-bottom:8px"></select>
       <div class="frow" style="margin:0">
-        <button class="bsave" style="background:linear-gradient(135deg,var(--coral-dk),var(--rose-dk))" id="saveSondBtn">Eintragen</button>
+        <button class="bsave" style="background:var(--coral-dk)" id="saveSondBtn">Eintragen</button>
         <button class="bcanc" id="cancSond">Abbrechen</button>
       </div>
     </div>
@@ -393,7 +393,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <p>Diesen Eintrag löschen?</p>
       <div class="del-btns">
         <button class="bsave" style="flex:1" id="delNow">Nur diesen Monat</button>
-        <button class="bsave" style="flex:1;background:linear-gradient(135deg,#c62828,#e53935)" id="delPerm">+ Wiederholung löschen</button>
+        <button class="bsave" style="flex:1;background:#b53a2e" id="delPerm">+ Wiederholung löschen</button>
       </div>
       <button class="bcanc" style="width:100%" id="delCanc">Abbrechen</button>
     </div>
@@ -1209,7 +1209,7 @@ function buildVariable(){
     catAddTrig.style.cssText='width:100%;margin-top:10px;font-size:13px';catAddTrig.textContent='+ Eintrag hinzufügen';
     const catAddForm=mk('div','');
     catAddForm.style.cssText='display:none;background:white;border-radius:10px;padding:12px;margin-top:8px';
-    catAddForm.innerHTML=`<div class="frow"><input class="fi fi-h" type="text" placeholder="Betrag (€)" id="camt_${cat.id}"><input class="fi fi-h" type="date" id="cdat_${cat.id}"></div><input class="fi" placeholder="Beschreibung (optional)" id="cdesc_${cat.id}" style="margin-bottom:8px"><div class="frow" style="margin:0"><button id="csave_${cat.id}" class="bsave" style="background:linear-gradient(135deg,var(--peach-dk),var(--coral-dk))">Speichern</button><button id="ccanc_${cat.id}" class="bcanc">Abbrechen</button></div>`;
+    catAddForm.innerHTML=`<div class="frow"><input class="fi fi-h" type="text" placeholder="Betrag (€)" id="camt_${cat.id}"><input class="fi fi-h" type="date" id="cdat_${cat.id}"></div><input class="fi" placeholder="Beschreibung (optional)" id="cdesc_${cat.id}" style="margin-bottom:8px"><div class="frow" style="margin:0"><button id="csave_${cat.id}" class="bsave" style="background:var(--peach-dk)">Speichern</button><button id="ccanc_${cat.id}" class="bcanc">Abbrechen</button></div>`;
     catAddForm.querySelector(`#cdat_${cat.id}`).value=today();
     catAddTrig.onclick=()=>{catAddForm.style.display=catAddForm.style.display==='none'?'block':'none';if(catAddForm.style.display==='block')catAddForm.querySelector(`#camt_${cat.id}`).focus();};
     catAddForm.querySelector(`#ccanc_${cat.id}`).onclick=()=>catAddForm.style.display='none';
@@ -1685,7 +1685,7 @@ function buildBackup(){
   sec.innerHTML=`<div class="card-hd" style="border-left:4px solid var(--muted)"><span class="ctitle">⚙️ Backup</span></div>
     <div class="row" style="gap:10px;padding:14px 16px">
       <button class="bsave" style="flex:1" id="expBtn">📤 Exportieren</button>
-      <button class="bsave" style="flex:1;background:linear-gradient(135deg,var(--peach-dk),var(--sun-dk))" id="impBtn">📥 Importieren</button>
+      <button class="bsave" style="flex:1;background:var(--peach-dk)" id="impBtn">Importieren</button>
     </div>
     <div style="padding:0 16px 14px;font-size:12px;color:var(--muted)">💡 Tipp: App auf Computer & Handy öffnen — Daten sind automatisch überall gleich (Firebase-Sync).</div>`;
   sec.querySelector('#expBtn').onclick=exportData;
